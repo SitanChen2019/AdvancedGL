@@ -1,0 +1,40 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
+
+project(AdvancedGL)
+set(CMAKE_CXX_STANDARD  14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+#Debug, Release, RelWithDebInfo, MinSizeRel
+set(CMAKE_BUILD_TYPE Debug)
+
+
+set(THIRD_PARTY_ROOT ${CMAKE_SOURCE_DIR}/thirdparty)
+
+
+add_subdirectory(./thirdparty/glfw-3.3)
+add_subdirectory(./thirdparty/assimp)
+file(GLOB IMGUI_SRC  ${THIRD_PARTY_ROOT}/imgui/src/*.cpp)
+set(THIRD_PARTY_SOURCE
+        ${THIRD_PARTY_ROOT}/glad/src/glad.c
+        ${IMGUI_SRC})
+file(GLOB FRAMEWORK_SRC Framework/src/*.cpp)
+file(GLOB DEMO_MODELDISPLAY_SRC Demos/ModelDisplay/*.h Demos/ModelDisplay/*.cpp)
+add_executable(DEMO main.cpp
+        ${THIRD_PARTY_SOURCE}
+        ${FRAMEWORK_SRC}
+        ${DEMO_MODELDISPLAY_SRC}
+        )
+
+target_include_directories(DEMO PRIVATE
+        ${THIRD_PARTY_ROOT}/glfw-3.3/include
+        ${THIRD_PARTY_ROOT}/glad/include
+        ${THIRD_PARTY_ROOT}/imgui/include
+        ${THIRD_PARTY_ROOT}/assimp/include
+        ${THIRD_PARTY_ROOT}/boost-1.71/include
+        ${THIRD_PARTY_ROOT}/glm/include
+        ${THIRD_PARTY_ROOT}/cst/include
+        Framework/include)
+
+target_compile_definitions( DEMO PRIVATE -DIMGUI_IMPL_OPENGL_LOADER_GLAD)
+target_link_libraries(DEMO PRIVATE glfw)
+target_link_libraries(DEMO PRIVATE assimp)
