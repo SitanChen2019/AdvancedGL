@@ -21,6 +21,9 @@ void WireFrameRenderable::attach() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
 
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_buffers.m_ebo.Id());
+	glBindVertexArray(0);
+
     glBindVertexArray(0);
 
     m_wireFrameShader = Global::shaderMgr().getShader("simple");
@@ -40,7 +43,9 @@ void WireFrameRenderable::detach() {
 }
 
 void WireFrameRenderable::render() {
-
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	
     Matrix4 mat = Global::renderWindow().getProjViewMatrix();
 
     glUseProgram( m_wireFrameShader->Id() );

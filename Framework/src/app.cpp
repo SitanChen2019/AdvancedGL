@@ -8,7 +8,6 @@
 GLFWwindow* App::createWindow()
 {
     AppSetting& setting = AppSetting::singletion();
-    GLFWwindow* window;
 
     RenderWindow::configGLFW();
 
@@ -38,7 +37,7 @@ bool App::init()
         return false;
 
     m_shaderMgr.init();
-    m_pRenderingWindow->registerRenderEventListener( &Global::uiManager() );
+    //m_pRenderingWindow->registerRenderEventListener( &Global::uiManager() );
     return true;
 }
 

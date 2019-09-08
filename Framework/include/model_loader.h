@@ -20,9 +20,16 @@ public:
         Vector<MeshData> retlist;
 
         Assimp::Importer importer;
-        const aiScene* pScene = importer.ReadFile(path, 0);
-        if( pScene == nullptr )
-            return  retlist;
+		unsigned flags = 0;
+		flags |= aiProcess_Triangulate;
+		//flags |= aiProcess_GenNormals;
+        const aiScene* pScene = importer.ReadFile(path, flags);
+		if (pScene == nullptr)
+		{
+			std::cout << "Warning : load nothing from " << path << std::endl;
+			return  retlist;
+		}
+
 
         Vec3Sequence vertices;
         Int32Sequence indices;
