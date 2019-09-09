@@ -5,6 +5,8 @@
 #ifndef ADVANCEDGL_APP_H
 #define ADVANCEDGL_APP_H
 
+#include <list>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -15,6 +17,8 @@
 #include "globject.h"
 #include "shader.h"
 #include "camera_control.h"
+#include "input_listener.h"
+#include "mouse_states.h"
 
 class Global;
 class IDemo;
@@ -41,6 +45,9 @@ private:
     GLObjectMgr m_glObjMgr;
     ShaderMgr m_shaderMgr;
     CameraControl m_cameraControl;
+    MouseStatus m_mouseStatus;
+
+    std::list<InputListener*> m_inputHandles;
 
     friend class Global;
 };

@@ -35,5 +35,9 @@ public:
     static CameraControl& cameraControl() {
         return s_app.m_cameraControl;
     }
+
+    static MouseStatus& mouseState() {
+        return s_app.m_mouseStatus;
+    }
 };
 #endif //ADVANCEDGL_GLOBAL_H

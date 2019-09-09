@@ -28,6 +28,9 @@ bool App::init()
 
 
     m_cameraControl.bindRendingWindow( m_pRenderingWindow );
+    m_cameraControl.setCamearaControlType(APEX_TYPE);
+
+    m_inputHandles.push_back(&m_cameraControl);
 
     /* Make the window's context current */
     glfwMakeContextCurrent(m_pWindow);
@@ -69,6 +72,7 @@ void App::destroy()
         m_pRenderingWindow = nullptr;
     }
 
+    m_inputHandles.clear();
     glfwDestroyWindow( m_pWindow );
     m_pWindow = nullptr;
 
@@ -82,20 +86,39 @@ void App::resize(int w, int h)
 
 void App::handleKeyInput(int button, int scancode, int action, int mods)
 {
-
+    for( auto handle : m_inputHandles )
+        if( handle->handleKeyInput(button,scancode,action,mods) == EventHandled )
+            return;
 }
 
 void App::handleMouseInput(int button, int action, int mods)
 {
+    if (action == GLFW_PRESS)
+    {
+        m_mouseStatus.onMouseButtonPress(button);
+    }
+    else if (action == GLFW_RELEASE)
+    {
+        m_mouseStatus.onMouseButtonRelease(button);
+    }
 
+    for( auto handle : m_inputHandles )
+        if( handle->handleMouseInput(button,action,mods) == EventHandled )
+            return;
 }
 
 void App::handleMouseMove(double xpos, double ypos)
 {
+    m_mouseStatus.setPosition(xpos,ypos);
 
+    for( auto handle : m_inputHandles )
+        if( handle->handleMouseMove( float(xpos), float(ypos)) == EventHandled )
+            return;
 }
 
 void App::handleMouseScroll(double x, double y)
 {
-
+    for( auto handle : m_inputHandles )
+        if( handle->handleMouseScroll((float)x,(float)y) == EventHandled )
+            return;
 }

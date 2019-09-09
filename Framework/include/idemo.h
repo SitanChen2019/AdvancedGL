@@ -6,6 +6,7 @@
 #define ADVANCEDGL_IDEMO_H
 
 #include "render_window.h"
+#
 class IDemo
 {
 public:

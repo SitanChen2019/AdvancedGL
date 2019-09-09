@@ -12,7 +12,7 @@ private:
     const int m_queueID;
 
 public:
-    IRenderable( int queueID )
+    IRenderable( int queueID = 60)
             :m_queueID(queueID){};
     virtual ~IRenderable(){};
 

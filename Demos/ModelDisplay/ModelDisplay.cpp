@@ -5,6 +5,7 @@
 #include "ModelDisplay.h"
 #include "global.h"
 #include "model_loader.h"
+#include "aabb_render.h"
 
 WireFrameRenderable::WireFrameRenderable(MeshBuffer buffers)
 :IRenderable(50)
@@ -77,6 +78,10 @@ bool ModelDisplay::init() {
         m_meshes.insert( pRenderable);
         Global::renderWindow().addRenderable( pRenderable );
     }
+
+    AABBRender* pBoxrender = new AABBRender(m_bbox);
+    m_meshes.insert( pBoxrender);
+    Global::renderWindow().addRenderable( pBoxrender );
 
     Global::cameraControl().fitBox( m_bbox);
     return true;
