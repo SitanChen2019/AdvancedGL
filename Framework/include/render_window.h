@@ -47,6 +47,9 @@ public:
     void registerRenderEventListener(RenderEventListener* pListener);
     void unregisterRenderEventListener(RenderEventListener* pListener);
 
+    void registerWindowEventListener(WindowEventListener* pListener);
+    void unregisterWindowEventListener(WindowEventListener* pListener);
+
     void fireRenderEvent( RenderEventIDS eventType, void* data);
     void fireWindowEvent();
 

@@ -50,7 +50,7 @@ GLFWwindow* RenderWindow::getGLFWWindow() {
 
 void RenderWindow::onResizeWindow(int width, int height)
 {
-    m_winHeight = width;
+    m_winWidth = width;
     m_winHeight = height;
     fireWindowEvent();
     fireRenderEvent(RENDER_RESIZE, nullptr);
@@ -74,6 +74,25 @@ void RenderWindow::unregisterRenderEventListener(RenderEventListener* pListener)
     {
         pListener->onDetachRenderingWindow(this);
         m_Listeners.erase(iter);
+    }
+}
+
+void RenderWindow::registerWindowEventListener(WindowEventListener* pListener)
+{
+    if( std::find( m_winListeners.begin(), m_winListeners.end(), pListener) == m_winListeners.end())
+    {
+        m_winListeners.push_front( pListener );
+        pListener->onAttachRenderingWindow( this ,m_winWidth, m_winHeight );
+    }
+}
+
+void RenderWindow::unregisterWindowEventListener(WindowEventListener* pListener)
+{
+    auto iter = std::find(  m_winListeners.begin(), m_winListeners.end(), pListener);
+    if( iter != m_winListeners.end() )
+    {
+        pListener->onDetachRenderingWindow(this);
+        m_winListeners.erase(iter);
     }
 }
 

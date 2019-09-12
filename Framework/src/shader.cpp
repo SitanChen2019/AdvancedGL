@@ -144,4 +144,6 @@ ShaderCompileResult ShaderMgr::clearBuildTmps(ShaderCompileResult& result, Shade
 
 void ShaderMgr::init() {
     registerShader("simple", "../res/shader/simple.vs", "../res/shader/simple.fs");
+    registerShader("triangle", "../res/shader/triangle/triangle.vs",
+            "../res/shader/triangle/triangle.fs","../res/shader/triangle/triangle.gs");
 }

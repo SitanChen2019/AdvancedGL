@@ -52,6 +52,11 @@ void CameraControl::fitBox( const AABB&  box)
     m_pRenderWindow->setViewMatrix( matView );
 }
 
+void CameraControl::onRenderWindowResize(RenderWindow* pWindow, unsigned width, unsigned height )
+{
+    updateProjMatrix();
+}
+
 void CameraControl::updateProjMatrix()
 {
     float fov = glm::radians(m_fov);

@@ -29,6 +29,7 @@ bool App::init()
 
     m_cameraControl.bindRendingWindow( m_pRenderingWindow );
     m_cameraControl.setCamearaControlType(APEX_TYPE);
+    m_pRenderingWindow->registerWindowEventListener(&m_cameraControl);
 
     m_inputHandles.push_back(&m_cameraControl);
 

@@ -7,6 +7,8 @@
 
 #include "aabb.h"
 #include "input_listener.h"
+#include "render_listener.h"
+
 class RenderWindow;
 
 class CameraControl;
@@ -40,7 +42,8 @@ private:
     void pan(CameraControl* pCamera,float xpos, float ypos);
 };
 
-class CameraControl : public  InputListener{
+class CameraControl : public  InputListener
+                    , public  WindowEventListener {
 public:
     void setCamearaControlType(CameraControlType type )
     {
@@ -62,7 +65,6 @@ public:
     }
 
     void fitBox( const AABB&  box);
-    void setProjectMatrix();
 
     EventHandleStatus  handleMouseScroll(float x, float y) override{
         return  m_impl == nullptr ? EventUnHandled : m_impl->handleMouseScroll(this, x,y);
@@ -82,6 +84,8 @@ public:
     {
         return m_impl == nullptr ? EventUnHandled : m_impl->handleKeyInput(this,button, scancode, action, mods);
     }
+
+    void onRenderWindowResize( RenderWindow* pWindow, unsigned width, unsigned height ) override;
 
     float getFov() const{ return m_fov;}
     void setFov( float fov ) { m_fov = fov; }

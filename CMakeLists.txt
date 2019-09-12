@@ -8,7 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BUILD_TYPE Debug)
 
 
+# ${CMAKE_SYSTEM_NAME} can be Windows/Darwin/Linux
+if( ${CMAKE_SYSTEM_NAME} STREQUAL Linux )
+    set (OpenGL_GL_PREFERENCE GLVND)
+endif()
+
 set(THIRD_PARTY_ROOT ${CMAKE_SOURCE_DIR}/thirdparty)
+
 
 
 add_subdirectory(./thirdparty/glfw-3.3)
@@ -16,7 +22,7 @@ add_subdirectory(./thirdparty/assimp)
 file(GLOB IMGUI_SRC  ${THIRD_PARTY_ROOT}/imgui/src/*.cpp)
 set(THIRD_PARTY_SOURCE
         ${THIRD_PARTY_ROOT}/glad/src/glad.c
-        ${IMGUI_SRC})
+        ${IMGUI_SRC} Demos/ModelDisplay/ModelDisplayRenderables.h Demos/ModelDisplay/ModelDisplayRenderables.cpp)
 file(GLOB FRAMEWORK_SRC Framework/src/*.cpp)
 file(GLOB DEMO_MODELDISPLAY_SRC Demos/ModelDisplay/*.h Demos/ModelDisplay/*.cpp)
 add_executable(DEMO main.cpp
@@ -34,6 +40,9 @@ target_include_directories(DEMO PRIVATE
         ${THIRD_PARTY_ROOT}/glm/include
         ${THIRD_PARTY_ROOT}/cst/include
         Framework/include)
+
+
+
 
 target_compile_definitions( DEMO PRIVATE -DIMGUI_IMPL_OPENGL_LOADER_GLAD)
 target_link_libraries(DEMO PRIVATE glfw)

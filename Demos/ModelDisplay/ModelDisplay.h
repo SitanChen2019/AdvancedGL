@@ -10,25 +10,6 @@
 #include "screen_quad.h"
 #include "aabb.h"
 
-class WireFrameRenderable : public IRenderable {
-public:
-    WireFrameRenderable( MeshBuffer buffers );
-
-    void setColor( Vec3 color) { m_color = color; }
-    void attach() override;
-    void render() override;
-    void detach() override;
-
-private:
-    ShaderObj* m_wireFrameShader;
-
-    MeshBuffer m_buffers;
-    GLint m_colorAttrLoc;
-    GLint m_viewprojMatAttrLoc;
-    GLuint m_vao;
-
-    Vec3 m_color = COLOR_WHITE ;
-};
 
 
 class ModelDisplay : public IDemo
