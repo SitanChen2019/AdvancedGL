@@ -16,14 +16,16 @@ uniform vec3 lightDir = vec3(-1,-1,-1);
 void main()
 {
    vec3 nLightDir = normalize( lightDir );
+   vec3 nOutNormal = normalize( outNormal );
 
-   float diffuse = max( dot(outNormal,-nLightDir),0 );
+   float diffuse = max( dot(nOutNormal,-nLightDir),0 );
 
-   vec3 reflectDir = reflect( nLightDir, outNormal);
+   vec3 reflectDir = reflect( nLightDir, nOutNormal);
    reflectDir = normalize(reflectDir);
    vec3 toEyeDir = vec3(0) - outFragPos;
    toEyeDir = normalize( toEyeDir);
-   float spec = pow( max(0, dot( toEyeDir, reflectDir) ),64);
+   float spec = pow( max(0, dot( toEyeDir, reflectDir) ),128);
+   spec = 0;
 
 
    FragColor.xyz =  sqrt( 0.2 + 0.8*(diffuse + spec) )*lightColor*diffMat;

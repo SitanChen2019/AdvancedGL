@@ -94,6 +94,9 @@ bool ModelDisplay::destroy()
     removeMeshGroup(m_smooth_triangle_meshes);
     removeMeshGroup(m_otherMesh);
 
+    Global::uiManager().removeUIView( m_pUI);
+    delete m_pUI;
+    m_pUI = nullptr;
 
     return true;
 }
@@ -101,7 +104,11 @@ bool ModelDisplay::destroy()
 void ModelDisplay::removeMeshGroup(std::set<IRenderable*>& meshGroup)
 {
     for( auto pRenderable : meshGroup )
+    {
         Global::renderWindow().removeRenderable( pRenderable );
+        delete pRenderable;
+    }
+
     meshGroup.clear();
 
 }
