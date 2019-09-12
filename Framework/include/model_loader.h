@@ -35,6 +35,10 @@ public:
         Int32Sequence indices;
         Vec3Sequence normals;
 
+        unsigned totalVertexCount;
+        unsigned totalIndicesCount;
+        unsigned totalNormalCount;
+
         for (unsigned i = 0; i < pScene->mNumMeshes; ++i) {
 
             const aiMesh *pMesh = pScene->mMeshes[i];
@@ -70,9 +74,17 @@ public:
             meshData.normals.swap( normals );
             meshData.primType = PT_TRIANGLE;
 
+            totalVertexCount += meshData.vertices.size();
+            totalIndicesCount += meshData.indices.size();
+            totalNormalCount += meshData.normals.size();
+
             retlist.push_back( meshData );
         }
 
+        std::cout << " Loaded model : " << path << std::endl;
+        std::cout << "Vertex Count : " << totalVertexCount  << std::endl;
+        std::cout << "Indices Count : " << totalIndicesCount  << std::endl;
+        std::cout << "Normal Count : " << totalNormalCount  << std::endl;
         return retlist;
     }
 };

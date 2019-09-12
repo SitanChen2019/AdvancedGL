@@ -10,6 +10,7 @@ class IRenderable
 {
 private:
     const int m_queueID;
+    bool  m_enable = true;
 
 public:
     IRenderable( int queueID = 60)
@@ -21,6 +22,8 @@ public:
     virtual void render(){};
 
     int getQueueID() { return m_queueID; }
+    bool  isEnable() { return m_enable; }
+    bool  setEnabel( bool enable ) { m_enable = enable; }
 };
 
 class DummyRenderable : public IRenderable

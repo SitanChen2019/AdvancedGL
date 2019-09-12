@@ -26,6 +26,6 @@ void main()
    float spec = pow( max(0, dot( toEyeDir, reflectDir) ),64);
 
 
-   FragColor.xyz = vec3(diffuse + spec);
+   FragColor.xyz =  sqrt( 0.2 + 0.8*(diffuse + spec) )*lightColor*diffMat;
    FragColor.a = 1;
 }

@@ -118,7 +118,7 @@ public:
         return nullptr;
     }
 
-    void reloadShader( std::string& name )
+    void reloadShader( std::string name )
     {
         auto it1 = m_shaders.find( name );
         if( it1 == m_shaders.end() )

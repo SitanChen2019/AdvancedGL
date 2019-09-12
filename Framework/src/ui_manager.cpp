@@ -30,6 +30,9 @@ void  UIManager::onAttachRenderingWindow( RenderWindow* pWindow )
 
     pWindow->addRenderable( &m_queueStart );
     pWindow->addRenderable( &m_queueEnd );
+
+    float size_pixels = 20;
+    mFont = io.Fonts->AddFontFromFileTTF("../res/font/PINGFANG BOLD.TTF", size_pixels);
 }
 
 void  UIManager::onRenderQueueStart(RenderWindow* pWindow, int pQueueID)
@@ -39,6 +42,8 @@ void  UIManager::onRenderQueueStart(RenderWindow* pWindow, int pQueueID)
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
+        drawUI();
     }
 }
 
@@ -46,8 +51,7 @@ void  UIManager::onRenderQueueEnd(RenderWindow* pWindow, int pQueueID)
 {
     if( pQueueID == m_queueEnd.getQueueID() )
     {
-        ImGui::Begin("HelloWorld");
-        ImGui::End();
+
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -64,3 +68,39 @@ void  UIManager::onDetachRenderingWindow(RenderWindow* pWindow)
     ImGui::DestroyContext();
 }
 
+void UIManager::addUIView(IUIView *pView) {
+
+    std::list<IUIView*>::iterator it = m_UIViews.begin();
+    for( ; it != m_UIViews.end(); ++it )
+    {
+        if( *it == pView )
+            break;
+    }
+
+    if( it == m_UIViews.end() )
+        m_UIViews.push_back(pView);
+}
+
+void UIManager::removeUIView(IUIView* pView)
+{
+        std::list<IUIView*>::iterator it = m_UIViews.begin();
+        for( ; it != m_UIViews.end(); ++it )
+        {
+            if( *it == pView )
+                break;
+        }
+
+        if( it != m_UIViews.end() )
+        m_UIViews.erase(it);
+}
+
+
+void UIManager::drawUI() {
+    ImGui::PushFont(mFont);
+    for( std::list<IUIView*>::iterator it = m_UIViews.begin();it != m_UIViews.end(); ++it )
+    {
+        (*it)->drawUI();
+    }
+    ImGui::PopFont();
+
+}

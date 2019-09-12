@@ -36,5 +36,6 @@ void MeshBuffer::initBufferFromMeshData(const MeshData &meshData){
 
     m_vertexCount = (unsigned)meshData.vertices.size();
     m_indicesCount = (unsigned)meshData.indices.size();
+    m_normalCount = (unsigned)meshData.normals.size();
 }
 

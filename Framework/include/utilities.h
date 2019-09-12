@@ -28,6 +28,10 @@ public:
         return ss.str();
     }
 
+    static void calculateSmoothNormal(  const  Vec3Sequence& vertices,
+                                 const Int32Sequence& indices,
+                                 Vec3Sequence&  normals );
+
 };
 
 

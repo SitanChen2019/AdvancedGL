@@ -41,7 +41,7 @@ bool App::init()
         return false;
 
     m_shaderMgr.init();
-    //m_pRenderingWindow->registerRenderEventListener( &Global::uiManager() );
+    m_pRenderingWindow->registerRenderEventListener( &Global::uiManager() );
     return true;
 }
 

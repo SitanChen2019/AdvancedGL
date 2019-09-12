@@ -146,4 +146,7 @@ void ShaderMgr::init() {
     registerShader("simple", "../res/shader/simple.vs", "../res/shader/simple.fs");
     registerShader("triangle", "../res/shader/triangle/triangle.vs",
             "../res/shader/triangle/triangle.fs","../res/shader/triangle/triangle.gs");
+
+    registerShader("tri_vn_pc", "../res/shader/tri_vn_pc/tri_vn_pc.vs",
+                   "../res/shader/tri_vn_pc/tri_vn_pc.fs");
 }

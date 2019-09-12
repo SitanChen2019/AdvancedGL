@@ -141,7 +141,8 @@ void RenderWindow::update()
 
         for( auto it1 = it->second.begin(); it1 != it->second.end(); ++it1 )
         {
-            (*it1)->render();
+            if( (*it1)->isEnable() )
+                (*it1)->render();
         }
 
         fireRenderEvent(RENDER_QUEUE_END_EVENT, (void*)&queueID);
