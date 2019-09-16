@@ -64,3 +64,11 @@ ColorTextureRender::ColorTextureRender()
     m_colorTextureDebugShader = Global::shaderMgr().getShader("color-texture-debug");
 };
 
+
+DepthTextureRender::DepthTextureRender()
+: IRenderable(255) {
+
+    Global::shaderMgr().registerShader("color-texture-debug", "../res/shader/quad.vs","../res/shader/depth_debug.fs");
+    m_depthTextureDebugShader = Global::shaderMgr().getShader("color-texture-debug");
+
+}

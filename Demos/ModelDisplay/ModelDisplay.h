@@ -12,6 +12,9 @@
 
 #include "ModelDisplayUIView.h"
 
+class ShadowRender;
+
+
 class ModelDisplay : public IDemo
         , public  IModelDIsplayUIModel
 {
@@ -35,6 +38,7 @@ public:
     std::set<IRenderable*> m_triagnle_meshes;
     std::set<IRenderable*> m_smooth_triangle_meshes;
 
+    ShadowRender*          m_pShadowRender;
     std::set<IRenderable*> m_otherMesh;
     ModelDisplayUIView*    m_pUI = nullptr;
     AABB                   m_bbox;

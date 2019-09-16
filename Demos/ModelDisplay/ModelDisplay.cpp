@@ -11,9 +11,12 @@
 #include "shape.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
+#include "ShadowRender.h"
 
 bool ModelDisplay::init() {
+
+    m_pShadowRender = new ShadowRender();
+    m_pShadowRender->initialize();
 
     Vector<MeshData> tessellationDatas = ModelLoader::loadModel("../res/models/skirt_01/nvqun2.obj");
 
@@ -59,6 +62,12 @@ bool ModelDisplay::init() {
     m_pUI = new ModelDisplayUIView(this);
     Global::uiManager().addUIView( m_pUI);
 
+    DepthTextureRender* pDepthRenderable = new DepthTextureRender();
+    Global::renderWindow().addRenderable( pDepthRenderable );
+    m_otherMesh.insert( pDepthRenderable );
+    pDepthRenderable->setColorTexture( m_pShadowRender->getDepthTexture() );
+
+
     return true;
 }
 
@@ -91,6 +100,20 @@ void ModelDisplay::reloadShader() {
 
 bool ModelDisplay::update()
 {
+    Vec3 lightDir = glm::vec3(-1,-1,-1);
+    float dialgonLength = m_bbox.diagonalLength();
+    float r = dialgonLength/2;
+    auto center =m_bbox.center();
+    auto lightPos = m_bbox.center() - 2.f*r*lightDir ;
+
+    Matrix4  viewMat = glm::lookAt( lightPos, center, Vec3(0,1,0) );
+    Matrix4  projMat = glm::ortho(0.f,2.0f*r,0.f,2.f*r,r,3.f*r);
+
+    viewMat = Global::renderWindow().getViewMatrix();
+    projMat = Global::renderWindow().getProjMatrix();
+
+    m_pShadowRender->renderDepthTexture( viewMat, projMat);
+
     return true;
 }
 
@@ -104,6 +127,10 @@ bool ModelDisplay::destroy()
     Global::uiManager().removeUIView( m_pUI);
     delete m_pUI;
     m_pUI = nullptr;
+
+    m_pShadowRender->destroy();
+    delete m_pShadowRender;
+    m_pShadowRender = nullptr;
 
     return true;
 }

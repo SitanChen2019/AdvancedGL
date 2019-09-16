@@ -15,7 +15,7 @@ uniform vec3 lightDir = vec3(-1,-1,-1);
 
 void main()
 {
-   vec3 nLightDir = normalize( lightDir );
+   vec3 nLightDir = normalize( (view*vec4(lightDir,0)).xyz );
    vec3 nOutNormal = normalize( outNormal );
 
    float diffuse = max( dot(nOutNormal,-nLightDir),0 );

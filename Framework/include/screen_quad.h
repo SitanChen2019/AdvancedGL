@@ -53,4 +53,31 @@ private:
     ScreenQuad m_quad;
 };
 
+class DepthTextureRender : public  IRenderable
+{
+public:
+    DepthTextureRender();
+
+    void setColorTexture( GLuint textureID )
+    {
+        m_textureId = textureID;
+    }
+
+    void render()
+    {
+        if(m_textureId != 0)
+        {
+            glUseProgram( m_depthTextureDebugShader->Id());
+            glBindTexture(GL_TEXTURE_2D, m_textureId);
+            m_quad.render();
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glUseProgram(0);
+        }
+    }
+private:
+    GLuint m_textureId = 0;
+    ShaderObj* m_depthTextureDebugShader = nullptr;
+    ScreenQuad m_quad;
+};
+
 #endif //ADVANCEDGL_SCREENQUAD_H

@@ -149,4 +149,7 @@ void ShaderMgr::init() {
 
     registerShader("tri_vn_pc", "../res/shader/tri_vn_pc/tri_vn_pc.vs",
                    "../res/shader/tri_vn_pc/tri_vn_pc.fs");
+
+    registerShader("shadow_depth", "../res/shader/shadow_depth/shadow_depth.vs",
+                   "../res/shader/shadow_depth/shadow_depth.fs");
 }
