@@ -27,9 +27,9 @@ public:
         return ret;
     }
 
-    static glm::vec3 sphereCoord2EulerCoord_Degree( float r, float latitudeAngle, float longitudeAngle)
+    static Vec3 sphereCoord2EulerCoord_Degree( float r, float latitudeAngle, float longitudeAngle)
     {
-         glm::vec3 ret;
+         Vec3 ret;
 
          ret.x = r*cos( glm::radians(latitudeAngle)) * cos( glm::radians(longitudeAngle));
          ret.y = r*sin( glm::radians(latitudeAngle));
@@ -132,6 +132,69 @@ public:
 
         return ret;
     }
+
+
+    static MeshData createXZRectangle( float width, float height )
+    {
+        MeshData ret;
+
+        auto width_dir = Vec3(1,0,0);
+        auto height_dir = Vec3(0,0,1);
+        Vec3 center = Vec3(0,0,0);
+
+        Vec3 v0 = center - width/2 * width_dir  + height/2*height_dir;
+        Vec3 v1 = center + width/2 * width_dir  + height/2*height_dir;
+        Vec3 v2 = center - width/2 * width_dir  - height/2*height_dir;
+        Vec3 v3 = center + width/2 * width_dir  - height/2*height_dir;
+
+        ret.vertices.push_back(v0);
+        ret.vertices.push_back(v1);
+        ret.vertices.push_back(v2);
+        ret.vertices.push_back(v3);
+
+        ret.indices.push_back(0);
+        ret.indices.push_back(3);
+        ret.indices.push_back(2);
+
+        ret.indices.push_back(0);
+        ret.indices.push_back(1);
+        ret.indices.push_back(3);
+
+        ret.normals.push_back(Vec3(0,1,0));
+        ret.normals.push_back(Vec3(0,1,0));
+        ret.normals.push_back(Vec3(0,1,0));
+        ret.normals.push_back(Vec3(0,1,0));
+
+        ret.textCoors.push_back(glm::vec2(0,0));
+        ret.textCoors.push_back(glm::vec2(1,0));
+        ret.textCoors.push_back(glm::vec2(0,1));
+        ret.textCoors.push_back(glm::vec2(1,1));
+
+        return ret;
+    }
+
+    static void Translataion(MeshData& meshData, Matrix4 matrix )
+    {
+        for( auto& vertex : meshData.vertices )
+        {
+            Vec4 tmp( vertex.x, vertex.y, vertex.z, 1);
+            Vec4 tmp1 = matrix*tmp;
+            vertex = Vec3( tmp1.x, tmp1.y, tmp1.z);
+        }
+
+        if( meshData.normals.empty() == false  )
+        {
+            Matrix4 normalMatrix=  glm::transpose( glm::inverse( matrix ));
+
+            for( auto& normal : meshData.normals )
+            {
+                Vec4 tmp( normal.x, normal.y, normal.z, 0);
+                Vec4 tmp1 = matrix*tmp;
+                normal = glm::normalize(  Vec3( tmp1.x, tmp1.y, tmp1.z) );
+            }
+        }
+    }
+
 };
 
 #endif //ADVANCEDGL_SHAPE_H

@@ -9,10 +9,17 @@
 #include "utilities.h"
 #include "ModelDisplayRenderables.h"
 #include "shape.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 
 bool ModelDisplay::init() {
 
     Vector<MeshData> tessellationDatas = ModelLoader::loadModel("../res/models/skirt_01/nvqun2.obj");
+
+    MeshData floor = Shape::createXZRectangle(3,3);
+    Shape::Translataion(floor, glm::translate( glm::identity<Matrix4>(), Vec3(0,-1,0)) );
+    tessellationDatas.push_back( floor );
 
     for( auto& meshdata : tessellationDatas )
     {
