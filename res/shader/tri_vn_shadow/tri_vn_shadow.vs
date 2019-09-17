@@ -7,11 +7,12 @@ uniform mat4 projection;
 
 out vec3 outNormal;
 out vec3 outFragPos;
-
+out vec3 worldFragPos;
 void main()
 {
     gl_Position =  projection* view * vec4(aPos, 1.0f);
 
+    worldFragPos = aPos;
     outFragPos = (view * vec4( aPos, 1.0f)).xyz;
     outNormal =  (transpose(inverse(view)) * vec4( aNormal, 0.0f)).xyz;
 }

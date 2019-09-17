@@ -23,6 +23,10 @@ void ModelDisplayUIView::drawUI()
         m_pModel->displayAsSmoothLighting();
     }
 
+    if( ImGui::Button("Shadow"))
+    {
+        m_pModel->displayAsShadowSmoothLighting();
+    }
 
     if (ImGui::Button("Reload")) {
         m_pModel->reloadShader();

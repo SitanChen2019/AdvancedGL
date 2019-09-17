@@ -3,6 +3,7 @@
 
 in vec3 outNormal;
 in vec3 outFragPos;
+in vec3 worldFragPos;
 
 out vec4 FragColor;
 
@@ -22,13 +23,18 @@ float getShadow( vec3 fragPos )
     tmp = tmp/tmp.w;
     tmp = tmp*0.5 + 0.5;
 
-    float depth = texture( shadowTexture, tmp.xy).r;
-    return depth < tmp.z ? 1 : 0;
+    vec2 texelSize = 1.0 / textureSize(shadowTexture, 0);
+    float depth;
+
+    depth = texture( shadowTexture, tmp.xy).r;
+
+    float bias = 0.005;
+    return tmp.z- bias <= depth ? 0 : 1;
 }
 
 void main()
 {
-   float shadow = getShadow( outFragPos );
+
 
    vec3 nLightDir = normalize( (view*vec4(lightDir,0)).xyz );
    vec3 nOutNormal = normalize( outNormal );
@@ -42,7 +48,8 @@ void main()
    float spec = pow( max(0, dot( toEyeDir, reflectDir) ),128);
    spec = 0;
 
-
+   //FragColor.xyz = vec3(1 - getShadow( worldFragPos)) ;
+   float shadow = getShadow( worldFragPos);
    FragColor.xyz =  sqrt( 0.2 + (1-shadow)*0.8*(diffuse + spec) )*lightColor*diffMat;
    FragColor.a = 1;
 }

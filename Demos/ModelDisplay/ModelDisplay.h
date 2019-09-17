@@ -27,7 +27,8 @@ public:
      void displayAsPureColor() override ;
      void displayAsHardLighting() override ;
      void displayAsSmoothLighting() override ;
-     void reloadShader() override ;
+     void displayAsShadowSmoothLighting() override ;
+     void reloadShader()  ;
 
 private:
     void removeMeshGroup(std::set<IRenderable*>& meshGroup);

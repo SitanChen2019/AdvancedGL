@@ -35,9 +35,9 @@ public:
         Int32Sequence indices;
         Vec3Sequence normals;
 
-        unsigned totalVertexCount;
-        unsigned totalIndicesCount;
-        unsigned totalNormalCount;
+        unsigned totalVertexCount(0);
+        unsigned totalIndicesCount(0);
+        unsigned totalNormalCount(0);
 
         for (unsigned i = 0; i < pScene->mNumMeshes; ++i) {
 

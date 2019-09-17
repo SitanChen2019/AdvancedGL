@@ -64,7 +64,7 @@ bool ModelDisplay::init() {
     Global::cameraControl().fitBox( m_bbox);
 
     showMeshGroup( m_otherMesh, false);
-    displayAsSmoothLighting();
+    displayAsShadowSmoothLighting();
 
     m_pUI = new ModelDisplayUIView(this);
     Global::uiManager().addUIView( m_pUI);
@@ -83,10 +83,10 @@ bool ModelDisplay::init() {
 
 void ModelDisplay::displayAsPureColor()
 {
-    showMeshGroup(m_wf_meshes, false );
+    showMeshGroup(m_wf_meshes, true );
     showMeshGroup(m_triagnle_meshes, false );
     showMeshGroup(m_smooth_triangle_meshes, false );
-    showMeshGroup(m_shadow_triangle_meshes, true);
+    showMeshGroup(m_shadow_triangle_meshes, false);
 }
 
 void ModelDisplay::displayAsHardLighting()
@@ -104,6 +104,17 @@ void ModelDisplay::displayAsSmoothLighting()
     showMeshGroup(m_smooth_triangle_meshes, true );
     showMeshGroup(m_shadow_triangle_meshes, false);
 }
+
+
+void ModelDisplay::displayAsShadowSmoothLighting(){
+    showMeshGroup(m_wf_meshes, false );
+    showMeshGroup(m_triagnle_meshes, false );
+    showMeshGroup(m_smooth_triangle_meshes, false );
+    showMeshGroup(m_shadow_triangle_meshes, true);
+}
+
+
+
 
 void ModelDisplay::reloadShader() {
     Global::shaderMgr().reloadShader("tri_vn_pc");

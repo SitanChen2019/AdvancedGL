@@ -15,6 +15,7 @@ public:
     virtual void displayAsPureColor() = 0;
     virtual void displayAsHardLighting() = 0;
     virtual void displayAsSmoothLighting() = 0;
+    virtual void displayAsShadowSmoothLighting() = 0;
     virtual void reloadShader() = 0;
 };
 
