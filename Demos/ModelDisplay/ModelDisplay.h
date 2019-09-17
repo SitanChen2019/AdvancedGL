@@ -33,10 +33,13 @@ private:
     void removeMeshGroup(std::set<IRenderable*>& meshGroup);
     void showMeshGroup(const std::set<IRenderable*>& meshGroup, bool enable );
 
+    void renderShadowTexture();
+
 public:
     std::set<IRenderable*> m_wf_meshes;
     std::set<IRenderable*> m_triagnle_meshes;
     std::set<IRenderable*> m_smooth_triangle_meshes;
+    std::set<IRenderable*> m_shadow_triangle_meshes;
 
     ShadowRender*          m_pShadowRender;
     std::set<IRenderable*> m_otherMesh;

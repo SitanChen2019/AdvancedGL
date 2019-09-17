@@ -36,6 +36,8 @@ bool ModelDisplay::init() {
 
         m_bbox.merge(meshdata.vertices);
 
+        m_pShadowRender->addMeshBuffer(buffers);
+
         IRenderable* pRenderable1 = new SimpleRenderable(buffers);
         Global::renderWindow().addRenderable( pRenderable1 );
         m_wf_meshes.insert( pRenderable1 );
@@ -47,6 +49,11 @@ bool ModelDisplay::init() {
         IRenderable* pRenderable3 = (IRenderable*)new TriangleWithVertexNormalRenderable(buffers);
         Global::renderWindow().addRenderable( pRenderable3 );
         m_smooth_triangle_meshes.insert( pRenderable3 );
+
+        TriangleWithVertexNormalShadowRenderable* pRenderable4 = new TriangleWithVertexNormalShadowRenderable(buffers);
+        pRenderable4->setShadowTexture( m_pShadowRender->getDepthTexture() );
+        Global::renderWindow().addRenderable( pRenderable4 );
+        m_shadow_triangle_meshes.insert( pRenderable4 );
     }
 
     AABBRender* pBoxrender = new AABBRender(m_bbox);
@@ -66,6 +73,8 @@ bool ModelDisplay::init() {
     Global::renderWindow().addRenderable( pDepthRenderable );
     m_otherMesh.insert( pDepthRenderable );
     pDepthRenderable->setColorTexture( m_pShadowRender->getDepthTexture() );
+    pDepthRenderable->setEnabel(false);
+
 
 
     return true;
@@ -74,9 +83,10 @@ bool ModelDisplay::init() {
 
 void ModelDisplay::displayAsPureColor()
 {
-    showMeshGroup(m_wf_meshes, true );
+    showMeshGroup(m_wf_meshes, false );
     showMeshGroup(m_triagnle_meshes, false );
     showMeshGroup(m_smooth_triangle_meshes, false );
+    showMeshGroup(m_shadow_triangle_meshes, true);
 }
 
 void ModelDisplay::displayAsHardLighting()
@@ -84,6 +94,7 @@ void ModelDisplay::displayAsHardLighting()
     showMeshGroup(m_wf_meshes, false );
     showMeshGroup(m_triagnle_meshes, true );
     showMeshGroup(m_smooth_triangle_meshes, false );
+    showMeshGroup(m_shadow_triangle_meshes, false);
 }
 
 void ModelDisplay::displayAsSmoothLighting()
@@ -91,6 +102,7 @@ void ModelDisplay::displayAsSmoothLighting()
     showMeshGroup(m_wf_meshes, false );
     showMeshGroup(m_triagnle_meshes, false );
     showMeshGroup(m_smooth_triangle_meshes, true );
+    showMeshGroup(m_shadow_triangle_meshes, false);
 }
 
 void ModelDisplay::reloadShader() {
@@ -100,25 +112,35 @@ void ModelDisplay::reloadShader() {
 
 bool ModelDisplay::update()
 {
+    renderShadowTexture();
+    return true;
+}
+
+void ModelDisplay::renderShadowTexture()
+{
     Vec3 lightDir = glm::vec3(-1,-1,-1);
-    float dialgonLength = m_bbox.diagonalLength();
-    float r = dialgonLength/2;
+    lightDir = glm::normalize(lightDir);
+
+    float diagonalLength = m_bbox.diagonalLength();
+    float r = diagonalLength/2;
     auto center =m_bbox.center();
     auto lightPos = m_bbox.center() - 2.f*r*lightDir ;
-
     Matrix4  viewMat = glm::lookAt( lightPos, center, Vec3(0,1,0) );
-    Matrix4  projMat = glm::ortho(0.f,2.0f*r,0.f,2.f*r,r,3.f*r);
-
-    viewMat = Global::renderWindow().getViewMatrix();
-    projMat = Global::renderWindow().getProjMatrix();
-
+    Matrix4  projMat = glm::ortho(-r,r,-r,r,r,3.f*r);
     m_pShadowRender->renderDepthTexture( viewMat, projMat);
 
-    return true;
+    Matrix4 lightViewProjmat = projMat*viewMat;
+    for( auto pRendeable : m_shadow_triangle_meshes )
+    {
+        TriangleWithVertexNormalShadowRenderable* pShadowRenderable = dynamic_cast<TriangleWithVertexNormalShadowRenderable*>( pRendeable );
+        if( pShadowRenderable )
+            pShadowRenderable->setLightViewProjMat( lightViewProjmat );
+    }
 }
 
 bool ModelDisplay::destroy()
 {
+    removeMeshGroup(m_shadow_triangle_meshes );
     removeMeshGroup(m_wf_meshes);
     removeMeshGroup(m_triagnle_meshes);
     removeMeshGroup(m_smooth_triangle_meshes);
