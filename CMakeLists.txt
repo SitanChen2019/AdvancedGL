@@ -24,7 +24,12 @@ set(THIRD_PARTY_SOURCE
         ${THIRD_PARTY_ROOT}/glad/src/glad.c
         ${IMGUI_SRC} Demos/ModelDisplay/ModelDisplayRenderables.h Demos/ModelDisplay/ModelDisplayRenderables.cpp)
 file(GLOB FRAMEWORK_SRC Framework/src/*.cpp)
-file(GLOB DEMO_MODELDISPLAY_SRC Demos/ModelDisplay/*.h Demos/ModelDisplay/*.cpp)
+file(GLOB DEMO_MODELDISPLAY_SRC
+        Demos/ModelDisplay/*.h
+        Demos/ModelDisplay/*.cpp
+        Demos/CharacterAnimation/*.h
+        Demos/CharacterAnimation/*.cpp
+        )
 add_executable(DEMO main.cpp
         ${THIRD_PARTY_SOURCE}
         ${FRAMEWORK_SRC}

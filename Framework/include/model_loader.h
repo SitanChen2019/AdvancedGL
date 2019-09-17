@@ -22,7 +22,8 @@ public:
         Assimp::Importer importer;
 		unsigned flags = 0;
 		flags |= aiProcess_Triangulate;
-		//flags |= aiProcess_GenNormals;
+		flags |= aiProcess_GenNormals;
+		//flags |= aiProcess_JoinIdenticalVertices;
         const aiScene* pScene = importer.ReadFile(path, flags);
 		if (pScene == nullptr)
 		{
@@ -38,6 +39,7 @@ public:
         unsigned totalVertexCount(0);
         unsigned totalIndicesCount(0);
         unsigned totalNormalCount(0);
+
 
         for (unsigned i = 0; i < pScene->mNumMeshes; ++i) {
 

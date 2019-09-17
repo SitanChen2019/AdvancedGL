@@ -3,7 +3,10 @@
 //
 #include <iostream>
 #include "global.h"
+
 #include "Demos/ModelDisplay/ModelDisplay.h"
+#include "Demos/CharacterAnimation/CharacterAnimation.h"
+
 void onGLFWErrorCallback( int error_id, const char* error_str)
 {
     std::cout << error_str << std::endl;
@@ -101,7 +104,21 @@ int main(int argc, const char** argv)
         return -1;
     }
 
-    ModelDisplay* pDemo = new ModelDisplay;
+    int demoID = 2;
+
+    IDemo* pDemo(nullptr);
+    switch ( demoID )
+    {
+        case 1:
+            pDemo = new ModelDisplay();
+            break;
+        case 2:
+            pDemo = new CharacterAnimation();
+            break;
+        default:
+            assert(false);
+    }
+
     app.run( pDemo );
     app.destroy();
 
