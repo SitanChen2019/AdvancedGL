@@ -18,8 +18,8 @@ bool ModelDisplay::init() {
     m_pShadowRender = new ShadowRender();
     m_pShadowRender->initialize();
 
-    //eVector<MeshData> tessellationDatas = ModelLoader::loadModel("../res/models/skirt_01/nvqun2.obj");
-    Vector<MeshData> tessellationDatas = ModelLoader::loadModel("../res/models/dancer_01/08dance.dae");
+    ModelLoader loader("../res/models/skirt_01/nvqun2.obj");
+    Vector<MeshData> tessellationDatas = loader.loadModel();
 
     MeshData floor = Shape::createXZRectangle(3,3);
     Shape::Translataion(floor, glm::translate( glm::identity<Matrix4>(), Vec3(0,-1,0)) );

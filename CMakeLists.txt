@@ -22,8 +22,9 @@ add_subdirectory(./thirdparty/assimp)
 file(GLOB IMGUI_SRC  ${THIRD_PARTY_ROOT}/imgui/src/*.cpp)
 set(THIRD_PARTY_SOURCE
         ${THIRD_PARTY_ROOT}/glad/src/glad.c
-        ${IMGUI_SRC} Demos/ModelDisplay/ModelDisplayRenderables.h Demos/ModelDisplay/ModelDisplayRenderables.cpp)
-file(GLOB FRAMEWORK_SRC Framework/src/*.cpp)
+        ${IMGUI_SRC} )
+
+file(GLOB FRAMEWORK_SRC Framework/src/*.cpp Framework/src/*.h)
 file(GLOB DEMO_MODELDISPLAY_SRC
         Demos/ModelDisplay/*.h
         Demos/ModelDisplay/*.cpp

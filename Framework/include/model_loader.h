@@ -5,29 +5,55 @@
 #ifndef ADVANCEDGL_MODELLOADER_H
 #define ADVANCEDGL_MODELLOADER_H
 
-#include "render_type.h"
+#include <iostream>
+
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/mesh.h>
+#include <assimp/cimport.h>
 #include <string>
+
+
+#include "render_type.h"
+#include "animator.h"
+
+//#define  CST_DEBUG
 
 class ModelLoader
 {
 public:
-    static Vector<MeshData> loadModel( std::string path )
+    ModelLoader( std::string path )
+    {
+        m_path = path;
+
+        unsigned flags = 0;
+        //flags |= aiProcess_Triangulate;
+        //flags |= aiProcess_GenNormals;
+        //flags |= aiProcess_JoinIdenticalVertices;
+        m_pScene = m_importer.ReadFile(path, flags);
+        if (m_pScene == nullptr)
+        {
+            std::cout << "Warning : failed to load scene from " << path << std::endl;
+        }
+    }
+
+    ~ModelLoader()
+    {
+
+    }
+
+    const aiScene* getScene()
+    {
+        return m_pScene;
+    }
+
+    Vector<MeshData> loadModel()
     {
         Vector<MeshData> retlist;
 
-        Assimp::Importer importer;
-		unsigned flags = 0;
-		flags |= aiProcess_Triangulate;
-		flags |= aiProcess_GenNormals;
-		//flags |= aiProcess_JoinIdenticalVertices;
-        const aiScene* pScene = importer.ReadFile(path, flags);
-		if (pScene == nullptr)
+		if (m_pScene == nullptr)
 		{
-			std::cout << "Warning : load nothing from " << path << std::endl;
 			return  retlist;
 		}
 
@@ -41,9 +67,9 @@ public:
         unsigned totalNormalCount(0);
 
 
-        for (unsigned i = 0; i < pScene->mNumMeshes; ++i) {
+        for (unsigned i = 0; i < m_pScene->mNumMeshes; ++i) {
 
-            const aiMesh *pMesh = pScene->mMeshes[i];
+            const aiMesh *pMesh = m_pScene->mMeshes[i];
 
             vertices.clear();
             vertices.resize(pMesh->mNumVertices);
@@ -83,11 +109,22 @@ public:
             retlist.push_back( meshData );
         }
 
-        std::cout << " Loaded model : " << path << std::endl;
+        std::cout << " Loaded model : " << m_path << std::endl;
         std::cout << "Vertex Count : " << totalVertexCount  << std::endl;
         std::cout << "Indices Count : " << totalIndicesCount  << std::endl;
         std::cout << "Normal Count : " << totalNormalCount  << std::endl;
+
+
         return retlist;
     }
+
+
+
+private:
+    const aiScene* m_pScene = nullptr;
+    std::string m_path;
+
+    Assimp::Importer m_importer;
 };
+
 #endif //ADVANCEDGL_MODELLOADER_H

@@ -155,4 +155,6 @@ void ShaderMgr::init() {
 
     registerShader("tri_vn_shadow", "../res/shader/tri_vn_shadow/tri_vn_shadow.vs",
                    "../res/shader/tri_vn_shadow/tri_vn_shadow.fs");
+
+    registerShader("simple_bone",  "../res/shader/simple_bone.vs", "../res/shader/simple.fs");
 }
