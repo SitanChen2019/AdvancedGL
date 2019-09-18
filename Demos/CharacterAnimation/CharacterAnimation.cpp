@@ -12,8 +12,8 @@
 
  bool CharacterAnimation::init()
  {
-     ModelLoader loader("../res/models/test/walk.dae");
-     //ModelLoader loader("../res/models/dancer_01/08dance.dae");
+     //ModelLoader loader("../res/models/test/walk.dae");
+     ModelLoader loader("../res/models/dancer_01/08dance.dae");
 
 
 
@@ -57,16 +57,16 @@
 
     lastTime = now;
 
-     Vector<Mat4Sequence> matList = m_pAnimator->calcuateVertexBoneMatrices();
-
-     AABB box;
-     for( int i= 0, n = m_wf_meshes.size(); i<n ; ++i )
-     {
-         AnimationRenderable* pAnimationRenderable = dynamic_cast<AnimationRenderable*>(m_wf_meshes[i]);
-         pAnimationRenderable->updateBoneMatrix( matList[i], box);
-     }
-
-     Global::cameraControl().fitBox( box );
+//     Vector<Mat4Sequence> matList = m_pAnimator->calcuateVertexBoneMatrices();
+//
+//     AABB box;
+//     for( int i= 0, n = m_wf_meshes.size(); i<n ; ++i )
+//     {
+//         AnimationRenderable* pAnimationRenderable = dynamic_cast<AnimationRenderable*>(m_wf_meshes[i]);
+//         pAnimationRenderable->updateBoneMatrix( matList[i], box);
+//     }
+//
+//     Global::cameraControl().fitBox( box );
 
      return true;
  }

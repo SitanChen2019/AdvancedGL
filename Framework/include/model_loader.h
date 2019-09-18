@@ -28,8 +28,8 @@ public:
         m_path = path;
 
         unsigned flags = 0;
-        //flags |= aiProcess_Triangulate;
-        //flags |= aiProcess_GenNormals;
+        flags |= aiProcess_Triangulate;
+        flags |= aiProcess_GenNormals;
         //flags |= aiProcess_JoinIdenticalVertices;
         m_pScene = m_importer.ReadFile(path, flags);
         if (m_pScene == nullptr)
