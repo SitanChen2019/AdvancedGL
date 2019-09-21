@@ -20,15 +20,15 @@ class ModelDisplay : public IDemo
 {
 public:
     virtual ~ModelDisplay(){}
-    virtual bool init();
-    virtual bool update();
-    virtual bool destroy();
+    bool init() override ;
+    bool update() override;
+    bool destroy() override ;
 
      void displayAsPureColor() override ;
      void displayAsHardLighting() override ;
      void displayAsSmoothLighting() override ;
      void displayAsShadowSmoothLighting() override ;
-     void reloadShader()  ;
+     void reloadShader() override ;
 
 private:
     void removeMeshGroup(std::set<IRenderable*>& meshGroup);

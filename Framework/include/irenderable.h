@@ -23,7 +23,7 @@ public:
 
     int getQueueID() { return m_queueID; }
     bool  isEnable() { return m_enable; }
-    bool  setEnabel( bool enable ) { m_enable = enable; }
+    void  setEnabel( bool enable ) { m_enable = enable;  }
 };
 
 class DummyRenderable : public IRenderable
