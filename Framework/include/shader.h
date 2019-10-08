@@ -79,12 +79,11 @@ struct ShaderTmpData
 class ShaderMgr {
 public:
     static  ShaderCompileResult buildShaderProgram(const char* vertexStr = nullptr, const char* fragStr = nullptr, const char* gemoStr = nullptr);
+    static bool compileShader(GLuint shader, const char* source, std::string& errorMsg);
+    static bool fileToString( std::string filePath, std::string& fileStr );
 
 private:
     static  ShaderCompileResult clearBuildTmps(ShaderCompileResult& result, ShaderTmpData& tmp );
-    static bool compileShader(GLuint shader, const char* source, std::string& errorMsg);
-
-    static bool fileToString( std::string filePath, std::string& fileStr );
 
 public:
     void init();

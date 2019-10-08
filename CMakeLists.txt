@@ -30,6 +30,8 @@ file(GLOB DEMO_MODELDISPLAY_SRC
         Demos/ModelDisplay/*.cpp
         Demos/CharacterAnimation/*.h
         Demos/CharacterAnimation/*.cpp
+        Demos/TessellationShader/*.h
+        Demos/TessellationShader/*.cpp
         )
 add_executable(DEMO main.cpp
         ${THIRD_PARTY_SOURCE}

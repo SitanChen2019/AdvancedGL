@@ -6,6 +6,7 @@
 
 #include "Demos/ModelDisplay/ModelDisplay.h"
 #include "Demos/CharacterAnimation/CharacterAnimation.h"
+#include "Demos/TessellationShader/TessellationShader.h"
 
 void onGLFWErrorCallback( int error_id, const char* error_str)
 {
@@ -104,7 +105,7 @@ int main(int argc, const char** argv)
         return -1;
     }
 
-    int demoID = 2;
+    int demoID = 3;
 
     IDemo* pDemo(nullptr);
     switch ( demoID )
@@ -114,6 +115,9 @@ int main(int argc, const char** argv)
             break;
         case 2:
             pDemo = new CharacterAnimation();
+            break;
+        case 3:
+            pDemo = new TessellationShader();
             break;
         default:
             assert(false);
