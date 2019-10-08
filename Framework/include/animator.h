@@ -114,8 +114,24 @@ public:
 
     void update( float delta_time );
     void pickAnimation( int idx );
+    void setSpeed( float speed )
+    {
+        m_speed = speed;
+    }
 
-    Vector<Mat4Sequence> calcuateVertexBoneMatrices();
+    //Vector<Mat4Sequence> calcuateVertexBoneMatrices();
+
+    const Vector<BoneWeightsForMesh>& getMeshesBoneWeights()
+    {
+        return m_data.meshBoneDataList;
+    }
+
+    const Mat4Sequence& getBoneMatrices()
+    {
+        return m_boneFinalMatrix;
+    }
+
+
 
 private:
     void updateAnimationNode( AnimationNode* pNode, float mod_time , const Matrix4& parentMatrix);
@@ -138,7 +154,9 @@ private:
     AnimationData m_data;
 
     //output
-    Vector<Matrix4> m_boneFinalMatrix;
+    Mat4Sequence m_boneFinalMatrix;
+
+    float m_speed = 1.0f;
 };
 
 #endif //ADVANCEDGL_ANIMATOR_H

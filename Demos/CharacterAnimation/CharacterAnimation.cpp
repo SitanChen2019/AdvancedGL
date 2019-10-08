@@ -16,30 +16,39 @@
      ModelLoader loader("../res/models/dancer_01/08dance.dae");
 
 
-
      const aiScene* pScene = loader.getScene();
-     if( pScene->mNumAnimations > 0 )
-     {
-         m_pAnimator = new Animator( pScene );
-     }
+
+     if( pScene->mNumAnimations == 0 )
+        return false;
+
+
+     Vector<BoneWeightsForMesh> meshBoneWeightsList;
+
+
+     m_pAnimator = new Animator( pScene );
+     m_pAnimator->pickAnimation(0);
+     m_pAnimator->update(0);
+
+     meshBoneWeightsList = m_pAnimator->getMeshesBoneWeights();
 
      Vector<MeshData> tessellationDatas = loader.loadModel();
-     for( auto& meshdata : tessellationDatas )
+     for( int i =0; i<tessellationDatas.size(); ++i)
      {
+         MeshData& meshdata =  tessellationDatas[i];
          MeshBuffer buffers;
          buffers.initBufferFromMeshData( meshdata );
+         AnimationRenderable* pRenderable = new AnimationRenderable(buffers, meshdata.vertices, meshBoneWeightsList[i]);
+         pRenderable->updateBoneMatrix( m_pAnimator->getBoneMatrices() );
+         Global::renderWindow().addRenderable( pRenderable );
+         m_wf_meshes.push_back( pRenderable );
 
-         m_bbox.merge(meshdata.vertices);
-
-         IRenderable* pRenderable1 = new AnimationRenderable(buffers, meshdata.vertices);
-         Global::renderWindow().addRenderable( pRenderable1 );
-         m_wf_meshes.push_back( pRenderable1 );
+         //use the first frame vertex to fix the bounding box
+         m_bbox.merge(  pRenderable->calcuateAnimationVertexList() );
      }
-
 
      Global::cameraControl().fitBox( m_bbox);
 
-     m_pAnimator->pickAnimation(0);
+     m_pAnimator->setSpeed(0.4f);
 
      return true;
  }
@@ -53,20 +62,17 @@
         lastTime = now;
 
     if( m_pAnimator )
-        m_pAnimator->update(now-lastTime);
+        m_pAnimator->update( now - lastTime );
 
     lastTime = now;
 
-//     Vector<Mat4Sequence> matList = m_pAnimator->calcuateVertexBoneMatrices();
-//
-//     AABB box;
-//     for( int i= 0, n = m_wf_meshes.size(); i<n ; ++i )
-//     {
-//         AnimationRenderable* pAnimationRenderable = dynamic_cast<AnimationRenderable*>(m_wf_meshes[i]);
-//         pAnimationRenderable->updateBoneMatrix( matList[i], box);
-//     }
-//
-//     Global::cameraControl().fitBox( box );
+
+     for( int i= 0, n = m_wf_meshes.size(); i<n ; ++i )
+     {
+         AnimationRenderable* pAnimationRenderable = dynamic_cast<AnimationRenderable*>(m_wf_meshes[i]);
+         pAnimationRenderable->updateBoneMatrix( m_pAnimator->getBoneMatrices() );
+     }
+
 
      return true;
  }

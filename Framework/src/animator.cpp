@@ -184,10 +184,10 @@ void Animator::loadAnimationNode( AnimationNode& node,  aiNode* ai_node , Animat
 
 void Animator::update( float delta_time )
 {
-    std::cout << delta_time << " " << m_data.animations[m_currentAnimationId].ticksPerSceond << std::endl;
+
     if( m_currentAnimationId !=-1 )
     {
-        m_animationTime +=  delta_time;
+        m_animationTime +=  delta_time * m_speed;
         float mod_time = fmod(m_animationTime * m_data.animations[m_currentAnimationId].ticksPerSceond, m_data.animations[m_currentAnimationId].duration);
         AnimationNode* pNode = m_data.rootNode;
         updateAnimationNode( pNode, mod_time, IdentifyMatrix4);
@@ -348,33 +348,33 @@ Matrix4  Animator::getPositionMatrixByTime( NodeAnimation* pNodeAnimationInfo, f
     return glm::translate(IdentifyMatrix4,  position );
 }
 
-Vector<Mat4Sequence>  Animator::calcuateVertexBoneMatrices()
-{
-    Vector<Mat4Sequence> retList;
-    retList.resize( m_data.meshBoneDataList.size() );
-
-
-    for( int i = 0, meshCount = m_data.meshBoneDataList.size();i < meshCount; ++i  )
-    {
-        Mat4Sequence& matSeqForMesh = retList[i];
-        BoneWeightsForMesh& meshBoneData = m_data.meshBoneDataList[i];
-        int vertexCount = meshBoneData.size();
-        matSeqForMesh.resize(vertexCount, Matrix4{0});
-        for( int j =0 ; j< vertexCount; ++j )
-        {
-            auto& vertexBoneData = meshBoneData[j];
-            float totalWeight = 0;
-
-            for( int k = 0; k < vertexBoneData.size(); ++k )
-            {
-                auto a = m_boneFinalMatrix[ vertexBoneData[k].boneId]*Vec4(0,0,0,1);
-                assert(a.w == 1);
-
-                totalWeight += vertexBoneData[k].weight;
-                matSeqForMesh[j] += vertexBoneData[k].weight * m_boneFinalMatrix[ vertexBoneData[k].boneId];
-            }
-        }
-    }
-
-    return retList;
-}
+//Vector<Mat4Sequence>  Animator::calcuateVertexBoneMatrices()
+//{
+//    Vector<Mat4Sequence> retList;
+//    retList.resize( m_data.meshBoneDataList.size() );
+//
+//
+//    for( int i = 0, meshCount = m_data.meshBoneDataList.size();i < meshCount; ++i  )
+//    {
+//        Mat4Sequence& matSeqForMesh = retList[i];
+//        BoneWeightsForMesh& meshBoneData = m_data.meshBoneDataList[i];
+//        int vertexCount = meshBoneData.size();
+//        matSeqForMesh.resize(vertexCount, Matrix4{0});
+//        for( int j =0 ; j< vertexCount; ++j )
+//        {
+//            auto& vertexBoneData = meshBoneData[j];
+//            float totalWeight = 0;
+//
+//            for( int k = 0; k < vertexBoneData.size(); ++k )
+//            {
+//                auto a = m_boneFinalMatrix[ vertexBoneData[k].boneId]*Vec4(0,0,0,1);
+//                assert(a.w == 1);
+//
+//                totalWeight += vertexBoneData[k].weight;
+//                matSeqForMesh[j] += vertexBoneData[k].weight * m_boneFinalMatrix[ vertexBoneData[k].boneId];
+//            }
+//        }
+//    }
+//
+//    return retList;
+//}

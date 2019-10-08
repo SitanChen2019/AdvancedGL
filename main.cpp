@@ -106,7 +106,6 @@ int main(int argc, const char** argv)
     }
 
     int demoID = 3;
-
     IDemo* pDemo(nullptr);
     switch ( demoID )
     {
