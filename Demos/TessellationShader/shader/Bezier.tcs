@@ -1,9 +1,9 @@
 #version 400
 
-layout( vertices =4 ) out;
+layout( vertices =16 ) out;
 
-uniform  int NumSegment = 5;
-uniform int NumStrips = 5 ;
+uniform  int NumSegment = 25;
+uniform int NumStrips = 25 ;
 
 void main()
 {

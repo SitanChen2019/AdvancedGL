@@ -58,8 +58,8 @@ void BesizerRenderable::attach() {
     }
 
     glAttachShader( m_BezierProgram, vs );
-    //glAttachShader( m_BezierProgram, tcs );
-    //glAttachShader( m_BezierProgram, tes );
+    glAttachShader( m_BezierProgram, tcs );
+    glAttachShader( m_BezierProgram, tes );
     glAttachShader( m_BezierProgram, fs );
 
     glLinkProgram(m_BezierProgram);
@@ -90,13 +90,25 @@ void BesizerRenderable::attach() {
     controlsPoints.push_back( Vec3(1,1,0));
     controlsPoints.push_back( Vec3(2,0,0));
 
+    controlsPoints.push_back( Vec3(-1,0,1));
+    controlsPoints.push_back( Vec3(0,1,1));
+    controlsPoints.push_back( Vec3(1,1,1));
+    controlsPoints.push_back( Vec3(2,0,1));
+
+    controlsPoints.push_back( Vec3(-1,0,2));
+    controlsPoints.push_back( Vec3(0,1,2));
+    controlsPoints.push_back( Vec3(1,1,2));
+    controlsPoints.push_back( Vec3(2,0,2));
+
+    controlsPoints.push_back( Vec3(-1,0,3));
+    controlsPoints.push_back( Vec3(0,1,3));
+    controlsPoints.push_back( Vec3(1,1,3));
+    controlsPoints.push_back( Vec3(2,0,3));
+
     Vector<unsigned> indices;
-    indices.push_back(0);
-    indices.push_back(1);
-    indices.push_back(2);
-    indices.push_back(3);
-    indices.push_back(2);
-    indices.push_back(1);
+    indices.reserve( controlsPoints.size() );
+    for( int i = 0; i < controlsPoints.size(); ++i )
+        indices.push_back(i);
 
     for( auto& vertex : controlsPoints)
         m_box.merge(vertex);
@@ -132,7 +144,7 @@ void BesizerRenderable::render() {
     glUniformMatrix4fv( attrLoc, 1, GL_FALSE ,(float*) &projMat);
 
     attrLoc = glGetUniformLocation(m_BezierProgram,"ourColor");
-    glUniform3f( attrLoc,1,1,1 );
+    glUniform4f( attrLoc,1,1,1,1 );
 
     glBindVertexArray(m_vao);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
@@ -140,9 +152,10 @@ void BesizerRenderable::render() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo );
 
-    //glPatchParameteri(GL_PATCH_VERTICES, 4);
-    glPointSize(100.0f);
-    glDrawElements(GL_TRIANGLES, m_indicesCount,  GL_UNSIGNED_INT, 0);
+    glPatchParameteri(GL_PATCH_VERTICES, 16);
+    glDrawElements(GL_PATCHES, m_indicesCount,  GL_UNSIGNED_INT, 0);
+
+
 
     glBindVertexArray(0);
     glUseProgram(0);
