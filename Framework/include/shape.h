@@ -84,7 +84,7 @@ public:
                 next_line_vertex_count = 1;
             }
 
-            if( current_line_vertex_count == 1 and next_line_vertex_count == 1)
+            if( current_line_vertex_count == 1 && next_line_vertex_count == 1)
             {
                 assert(false);
             }
