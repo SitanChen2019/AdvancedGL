@@ -33,6 +33,11 @@ AABB::AABB(const Vec3Sequence& vertices)
         merge( vertex );
 }
 
+void  AABB::merge(const Vec3Sequence& points)
+{
+	for (const Vec3& p : points)
+		merge(p);
+}
 
 void AABB::merge(const Vec3& point)
 {

@@ -19,6 +19,8 @@ public:
 
     void merge(const Vec3& point);
     void merge(const AABB& box);
+	void merge(const Vec3Sequence& points);
+
     Vec3 center() const;
     Vec3 minP() const;
     Vec3 maxP() const;

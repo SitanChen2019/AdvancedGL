@@ -7,6 +7,7 @@
 #include "Demos/ModelDisplay/ModelDisplay.h"
 #include "Demos/CharacterAnimation/CharacterAnimation.h"
 #include "Demos/TessellationShader/TessellationShader.h"
+#include "Demos/Untangle/UntangleDemo.h"
 
 void onGLFWErrorCallback( int error_id, const char* error_str)
 {
@@ -105,7 +106,7 @@ int main(int argc, const char** argv)
         return -1;
     }
 
-    int demoID = 1;
+    int demoID = 4;
     IDemo* pDemo(nullptr);
     switch ( demoID )
     {
@@ -118,6 +119,9 @@ int main(int argc, const char** argv)
         case 3:
             pDemo = new TessellationShader();
             break;
+		case 4:
+			pDemo = new UntangleDemo();
+			break;
         default:
             assert(false);
     }
