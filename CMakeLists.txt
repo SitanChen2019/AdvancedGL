@@ -7,6 +7,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #Debug, Release, RelWithDebInfo, MinSizeRel
 set(CMAKE_BUILD_TYPE Debug)
 
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
 # ${CMAKE_SYSTEM_NAME} can be Windows/Darwin/Linux
 if( ${CMAKE_SYSTEM_NAME} STREQUAL Linux )
@@ -55,3 +58,5 @@ target_include_directories(DEMO PRIVATE
 target_compile_definitions( DEMO PRIVATE -DIMGUI_IMPL_OPENGL_LOADER_GLAD)
 target_link_libraries(DEMO PRIVATE glfw)
 target_link_libraries(DEMO PRIVATE assimp)
+
+
