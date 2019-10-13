@@ -2,10 +2,13 @@
 // Created by Administrator on 10/12/2019.
 //
 
-#ifndef ADVANCEDGL_UNTANGLEOSOLVER_H
-#define ADVANCEDGL_UNTANGLEOSOLVER_H
+#ifndef ADVANCEDGL_UNTANGLE_SOLVER_H
+#define ADVANCEDGL_UNTANGLE_SOLVER_H
 
 #include "render_type.h"
+#include <map>
+#include <set>
+#include <vector>
 
 struct Particle
 {
@@ -28,27 +31,37 @@ public:
 
 struct  Edge
 {
-    int p0;
-    int p1;
+    Edge( int triangleID , int edgeID );
 
-    int triangleID;
-    int edgeID;
+    int mP0;
+    int mP1;
+
+    int mTriangleID;
+    int mEdgeLocalID;
 
     int mEID;
 };
 
 struct TrianglePair
 {
+    TrianglePair( int triID0, int triID1 )
+    {
+        assert( triID0 != triID1 );
+        mTriangleID0 = triID0 > triID1 ? triID1 : triID0;
+        mTriangleID0 = triID0 < triID1 ? triID1 : triID0;
+    }
+
     int mTriangleID0;
     int mTriangleID1;
 };
 
 struct EdgeTrianglePair
 {
-    Edge edge;
-    int  triangleID;
+    EdgeTrianglePair(const Edge& edge , int triangleID, float hit_t);
+    Edge mEdge;
+    int  mTriangleID;
 
-    float hit_t;
+    float mHit_t;
 };
 
 struct EdgeCorrect
@@ -70,21 +83,27 @@ public:
         mCount += 1;
     }
 
-    void getOffset()
+    Vec3 getOffset() const
     {
-        retunr mOffset;
+        return mOffset;
     }
 };
 
 class UntangleSolver {
 
 public:
-    //static createUntangleSo
-    UntangleSolver( std::vector<Particle>&& particles, std::vector<Triangle>&& triangles );
+    static UntangleSolver& singleton();
+
+    void init( std::vector<Particle>&& particles, std::vector<Triangle>&& triangles );
 
     std::vector<Particle>& getParticles()
     {
         return m_particles;
+    }
+
+    const std::vector<Triangle>& getTriangles() const
+    {
+        return m_triangles;
     }
 
     void preUpdate();
