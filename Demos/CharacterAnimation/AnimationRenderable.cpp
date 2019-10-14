@@ -26,9 +26,9 @@ AnimationRenderable::AnimationRenderable(MeshBuffer buffers,
     //support max 16 bones per vertex
     boneIDs.resize( boneWeightsList.size() * 16 , 1);
     boneWeights.resize( boneWeightsList.size()*16, 0 );
-    for( int i = 0; i < boneWeightsList.size(); ++i )
+    for( size_t i = 0; i < boneWeightsList.size(); ++i )
     {
-        for( int j = 0; j < boneWeightsList[i].size(); ++j )
+        for( size_t j = 0; j < boneWeightsList[i].size(); ++j )
         {
             boneIDs[16*i+j]  = boneWeightsList[i][j].boneId;
             boneWeights[16*i+j] = boneWeightsList[i][j].weight;
@@ -121,7 +121,7 @@ void  AnimationRenderable::render() {
     glUniform3f( m_diffuseAttrLoc, m_color.x, m_color.y, m_color.z );
 
     assert( m_boneMatrices.size() < 200);
-    glUniformMatrix4fv( m_boneMatrArrayAttrLoc,  m_boneMatrices.size(), GL_FALSE, (float*)m_boneMatrices.data());
+    glUniformMatrix4fv( m_boneMatrArrayAttrLoc,  (int)m_boneMatrices.size(), GL_FALSE, (float*)m_boneMatrices.data());
 
     glDrawElements(GL_TRIANGLES, m_buffers.m_indicesCount, GL_UNSIGNED_INT, 0);
 
@@ -141,13 +141,13 @@ Vec3Sequence AnimationRenderable::calcuateAnimationVertexList( )
 {
     Vec3Sequence boneTransformedVertices;
     boneTransformedVertices.resize( m_buffers.m_vertexCount );
-    for( int j = 0; j< m_originVertex.size(); ++j )
+    for( size_t j = 0; j< m_originVertex.size(); ++j )
     {
         BoneWeightsForVertex& vertexBoneData = m_boneWeightForMesh[j];
 
         Matrix4  currentVertexBoneMatrix = Matrix4(0);
         float totalWeight  = 0;
-        for( int k = 0; k < vertexBoneData.size(); ++k )
+        for( size_t k = 0; k < vertexBoneData.size(); ++k )
         {
             totalWeight += vertexBoneData[k].weight;
             currentVertexBoneMatrix  += vertexBoneData[k].weight * m_boneMatrices[ vertexBoneData[k].boneId];

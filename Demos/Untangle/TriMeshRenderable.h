@@ -18,6 +18,8 @@ public:
 	void render() override;
 	void detach() override;
 
+
+
 private:
 	ShaderObj* m_triangleShader = nullptr;
 

@@ -27,12 +27,12 @@ void Animator::loadFromScene(const aiScene* pScene)
         const aiAnimation& ai_animation = *(pScene->mAnimations[i]);
         std::cout <<  ai_animation.mName.C_Str() << std::endl;
         animation.name = std::string(  ai_animation.mName.C_Str() );
-        animation.duration = ai_animation.mDuration;
-        animation.ticksPerSceond = ai_animation.mTicksPerSecond;
+        animation.duration = (float)ai_animation.mDuration;
+        animation.ticksPerSceond = (float)ai_animation.mTicksPerSecond;
 
         std::cout << animation.name << " has " << ai_animation.mNumChannels << " channels." << std::endl;
         animation.channels.resize( ai_animation.mNumChannels);
-        for( int j = 0; j < ai_animation.mNumChannels; ++j )
+        for( unsigned j = 0; j < ai_animation.mNumChannels; ++j )
         {
             NodeAnimation& nodeAnim = animation.channels[j];
             const aiNodeAnim& ai_nodeAnim = *(ai_animation.mChannels[j]);
@@ -43,7 +43,7 @@ void Animator::loadFromScene(const aiScene* pScene)
             nodeAnim.nodeName = ai_nodeAnim.mNodeName.C_Str();
 
             nodeAnim.rotationKeys.resize( ai_nodeAnim.mNumRotationKeys );
-            for( int k = 0 ; k < ai_nodeAnim.mNumRotationKeys; ++ k )
+            for(unsigned k = 0 ; k < ai_nodeAnim.mNumRotationKeys; ++ k )
             {
                 nodeAnim.rotationKeys[k].first = (float)ai_nodeAnim.mRotationKeys[k].mTime;
                 nodeAnim.rotationKeys[k].second.x = ai_nodeAnim.mRotationKeys[k].mValue.x;
@@ -53,7 +53,7 @@ void Animator::loadFromScene(const aiScene* pScene)
             }
 
             nodeAnim.positionKeys.resize( ai_nodeAnim.mNumPositionKeys );
-            for( int k = 0; k < ai_nodeAnim.mNumPositionKeys; ++k )
+            for(unsigned k = 0; k < ai_nodeAnim.mNumPositionKeys; ++k )
             {
                 nodeAnim.positionKeys[k].first = (float)ai_nodeAnim.mPositionKeys[k].mTime;
                 nodeAnim.positionKeys[k].second.x = ai_nodeAnim.mPositionKeys[k].mValue.x;
@@ -62,7 +62,7 @@ void Animator::loadFromScene(const aiScene* pScene)
             }
 
             nodeAnim.scaleKeys.resize( ai_nodeAnim.mNumScalingKeys );
-            for( int k = 0; k < ai_nodeAnim.mNumScalingKeys; ++k )
+            for(unsigned k = 0; k < ai_nodeAnim.mNumScalingKeys; ++k )
             {
                 nodeAnim.scaleKeys[k].first = (float)ai_nodeAnim.mScalingKeys[k].mTime;
                 nodeAnim.scaleKeys[k].second.x = ai_nodeAnim.mScalingKeys[k].mValue.x;
@@ -89,7 +89,7 @@ void Animator::loadFromScene(const aiScene* pScene)
         BoneWeightsForMesh& boneWeightsList = m_data.meshBoneDataList[i];
 
         boneWeightsList.resize( pMesh->mNumVertices );
-        for( int j = 0; j < pMesh->mNumBones; ++j )
+        for(unsigned j = 0; j < pMesh->mNumBones; ++j )
         {
             const aiBone&  ai_bone = *(pMesh->mBones[j]);
             std::string boneName  = ai_bone.mName.C_Str();
@@ -106,7 +106,7 @@ void Animator::loadFromScene(const aiScene* pScene)
                         bone.offsetMatrix[n][m] = ai_bone.mOffsetMatrix[m][n];
                     }
 
-                boneID = m_data.bones.size();
+                boneID = (int)m_data.bones.size();
                 bone.id = boneID;
                 m_data.boneMap.insert(std::make_pair(boneName, boneID));
                 m_data.bones.push_back(bone);
@@ -131,7 +131,7 @@ void Animator::loadFromScene(const aiScene* pScene)
 #endif
             }
 
-            for( int k = 0; k < ai_bone.mNumWeights; ++k )
+            for( unsigned k = 0; k < ai_bone.mNumWeights; ++k )
             {
                 const aiVertexWeight& ai_vertexWeight = ai_bone.mWeights[k];
                 boneWeightsList[ai_vertexWeight.mVertexId].push_back(BoneWeight{boneID,ai_vertexWeight.mWeight});
@@ -173,7 +173,7 @@ void Animator::loadAnimationNode( AnimationNode& node,  aiNode* ai_node , Animat
         }
 
     node.pChildren.resize( ai_node->mNumChildren );
-    for( int i = 0; i < ai_node->mNumChildren; ++i )
+    for( unsigned i = 0; i < ai_node->mNumChildren; ++i )
     {
         node.pChildren[i] = new AnimationNode;
         loadAnimationNode( *node.pChildren[i], ai_node->mChildren[i], &node );
@@ -235,7 +235,7 @@ void Animator::updateAnimationNode( AnimationNode* pNode, float mod_time , const
 
 void Animator::pickAnimation( int idx )
 {
-    if( idx >= m_data.animations.size() )
+    if( idx >= (int)m_data.animations.size() )
         return;
 
     if( idx != m_currentAnimationId )
@@ -251,7 +251,7 @@ Bone*  Animator::findBone( const std::string& boneName )
     if( it != m_data.boneMap.end()  )
     {
         int boneID = it->second;
-        assert( boneID >= 0 && boneID < m_data.bones.size() );
+        assert( boneID >= 0 && boneID < (int)m_data.bones.size() );
         return &( m_data.bones.at(boneID) );
     }
     else
@@ -283,7 +283,7 @@ Matrix4  Animator::getRotateMatrixByTime( NodeAnimation* pNodeAnimationInfo, flo
     int preID = 0;
     int curID = 1;
 
-    for( ; curID < pNodeAnimationInfo->rotationKeys.size() - 1; ++preID,++curID )
+    for( ; curID < (int)pNodeAnimationInfo->rotationKeys.size() - 1; ++preID,++curID )
     {
         if( pNodeAnimationInfo->rotationKeys[curID].first > mod_time)
             break;
@@ -309,7 +309,7 @@ Matrix4  Animator::getScaleMatrixByTime( NodeAnimation* pNodeAnimationInfo, floa
     int preID = 0;
     int curID = 1;
 
-    for( ; curID < pNodeAnimationInfo->scaleKeys.size() - 1; ++preID,++curID )
+    for( ; curID < (int)pNodeAnimationInfo->scaleKeys.size() - 1; ++preID,++curID )
     {
         if( pNodeAnimationInfo->scaleKeys[curID].first > mod_time)
             break;
@@ -334,7 +334,7 @@ Matrix4  Animator::getPositionMatrixByTime( NodeAnimation* pNodeAnimationInfo, f
     int preID = 0;
     int curID = 1;
 
-    for( ; curID < pNodeAnimationInfo->positionKeys.size() - 1; ++preID,++curID )
+    for( ; curID < (int)pNodeAnimationInfo->positionKeys.size() - 1; ++preID,++curID )
     {
         if( pNodeAnimationInfo->positionKeys[curID].first > mod_time)
             break;

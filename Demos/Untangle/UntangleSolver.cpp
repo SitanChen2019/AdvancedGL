@@ -3,6 +3,8 @@
 //
 
 #include "UntangleSolver.h"
+#include "GeometryMath.h"
+#include "boost/container_hash/hash.hpp"
 
 UntangleSolver& UntangleSolver::singleton()
 {
@@ -41,7 +43,7 @@ void UntangleSolver::postUpdate() {
 void UntangleSolver::findCollisionTrianglePairs()
 {
     m_collisionTrianglePair.clear();
-    int triangleCount = m_triangles.size();
+    int triangleCount = (int)m_triangles.size();
     for( int i = 0; i < triangleCount; ++i )
     {
         for( int j = i+1; j < triangleCount ; ++j )
@@ -91,10 +93,10 @@ void UntangleSolver::calculateEdgeCorrectVector()
         Vec3 gvector = calculateGVector( edge,triangleID );
         addEdgeCorrectVector( edge , gvector );
 
-        Vec3 gvector_for_triangle = -gvector;
-        addEdgeCorrectVector( Edge(triangleID,0), gvector);
-        addEdgeCorrectVector( Edge(triangleID,1), gvector);
-        addEdgeCorrectVector( Edge(triangleID,2), gvector);
+        //Vec3 gvector_for_triangle = -gvector;
+        //addEdgeCorrectVector( Edge(triangleID,0), gvector);
+        //addEdgeCorrectVector( Edge(triangleID,1), gvector);
+        //addEdgeCorrectVector( Edge(triangleID,2), gvector);
     }
 }
 
@@ -115,7 +117,7 @@ void UntangleSolver::addEdgeCorrectVector( const Edge& edge , const Vec3 correct
     auto it = m_edgeCorrects.find( edge );
     if( it == m_edgeCorrects.end() )
     {
-        it = m_edgeCorrects.insert( std::make_pair(edge, EdgeCorrect() )).second;
+        it = m_edgeCorrects.insert( std::make_pair(edge, EdgeCorrect() )).first;
     }
 
     it->second.addOffset( correctVector );
@@ -148,6 +150,10 @@ Edge::Edge( int triangleID , int edgeLocalID )
         assert(false);
     }
 
+    mEID= 0;
+    boost::hash_combine(mEID,mP0);
+    boost::hash_combine(mEID,mP1);
+
 }
 
 EdgeTrianglePair::EdgeTrianglePair(const Edge& edge , int triangleID,float hit_t)
@@ -159,15 +165,55 @@ EdgeTrianglePair::EdgeTrianglePair(const Edge& edge , int triangleID,float hit_t
 
 bool UntangleSolver::testTriangleIntersect(int triangleID0, int triangleID1 )
 {
+    Triangle& t1 = m_triangles[triangleID0];
+    Triangle& t2 = m_triangles[triangleID1];
 
+    return GeometryMath::isTriangleIntersect(
+        m_particles[t1.p0].mCurPosition,m_particles[t1.p1].mCurPosition,m_particles[t1.p2].mCurPosition,
+        m_particles[t2.p0].mCurPosition,m_particles[t2.p1].mCurPosition,m_particles[t2.p2].mCurPosition
+            );
 }
 
-bool UntangleSolver::testEdgeTriangleIntersect(const Edge& edge, int Triangle, float& hit_t )
+bool UntangleSolver::testEdgeTriangleIntersect(const Edge& edge, int triangleID, float& hit_t )
 {
+    Triangle& t1 = m_triangles[triangleID];
 
+    return GeometryMath::edgeTriangleIntersect(
+        m_particles[edge.mP0].mCurPosition, m_particles[edge.mP1].mCurPosition,
+        m_particles[t1.p0].mCurPosition,m_particles[t1.p1].mCurPosition,m_particles[t1.p2].mCurPosition,
+            hit_t );
 }
 
-Vec3 UntangleSolver::calculateGVector(const Edge& edge, int Triangle)
+Vec3 UntangleSolver::getTriangleNormal(int triangleID)
 {
+    const Triangle& t = m_triangles.at(triangleID);
 
+    Vec3 p0 = m_particles.at(t.p0).mCurPosition;
+    Vec3 p1 = m_particles.at(t.p1).mCurPosition;
+    Vec3 p2 = m_particles.at(t.p2).mCurPosition;
+    Vec3 normal =  glm::cross( p1 - p0, p2 - p0);
+    normal = glm::normalize(normal);
+    return normal;
+}
+Vec3 UntangleSolver::calculateGVector(const Edge& edge, int triangleID)
+{
+    Vec3 N = getTriangleNormal(triangleID );
+    Vec3 M = getTriangleNormal(edge.mTriangleID);
+
+    Vec3 R = glm::cross(N,M);
+
+    Triangle B = m_triangles[ edge.mTriangleID ];
+    Vec3 inner_point_in_B = 0.5f*m_particles[B.p0].mCurPosition
+            + 0.25f*m_particles[B.p1].mCurPosition + 0.25f*m_particles[B.p2].mCurPosition;
+    Vec3 tmp = (inner_point_in_B - m_particles[ edge.mP0].mCurPosition);
+    if( glm::dot(tmp, R ) < 0 )
+        R = -R;
+
+    Vec3 E = m_particles[edge.mP1].mCurPosition - m_particles[edge.mP0].mCurPosition;
+	E = glm::normalize(E);
+
+	float tmp1 = glm::dot(E, R);
+	float tmp2 = glm::dot(E, N);
+	float tmp3 = tmp1 / tmp2;
+    return R -2*( glm::dot(E,R)/glm::dot(E,N) ) * N;
 }

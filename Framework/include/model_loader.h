@@ -102,9 +102,9 @@ public:
             meshData.normals.swap( normals );
             meshData.primType = PT_TRIANGLE;
 
-            totalVertexCount += meshData.vertices.size();
-            totalIndicesCount += meshData.indices.size();
-            totalNormalCount += meshData.normals.size();
+            totalVertexCount += (unsigned)meshData.vertices.size();
+            totalIndicesCount += (unsigned)meshData.indices.size();
+            totalNormalCount += (unsigned)meshData.normals.size();
 
             retlist.push_back( meshData );
         }

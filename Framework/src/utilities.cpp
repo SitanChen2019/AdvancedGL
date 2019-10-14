@@ -18,7 +18,7 @@
     Vector<int> normalCountPerVertex;
     normalCountPerVertex.resize( vertices.size(), 0);
 
-    for( int i = 0, n = indices.size(); i<n; i+=3 )
+    for( size_t i = 0, n = indices.size(); i<n; i+=3 )
     {
         const int vid0 =  indices[i];
         const int vid1 =  indices[i+1];
@@ -39,7 +39,7 @@
         normalCountPerVertex[vid2] += 1;
     }
 
-    for( int i =0 , n = vertices.size(); i < n; ++i )
+    for( size_t i =0 , n = vertices.size(); i < n; ++i )
     {
         if( normalCountPerVertex[i] > 1 )
         {

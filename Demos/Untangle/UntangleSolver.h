@@ -39,7 +39,18 @@ struct  Edge
     int mTriangleID;
     int mEdgeLocalID;
 
-    int mEID;
+    size_t mEID;
+
+    bool operator<( const Edge& other) const
+    {
+        if( mP0 < other.mP0 )
+            return true;
+        else if( other.mP0 < mP0 )
+            return false;
+        else{
+            return mP1 < other.mP1;
+        }
+    }
 };
 
 struct TrianglePair
@@ -48,11 +59,22 @@ struct TrianglePair
     {
         assert( triID0 != triID1 );
         mTriangleID0 = triID0 > triID1 ? triID1 : triID0;
-        mTriangleID0 = triID0 < triID1 ? triID1 : triID0;
+        mTriangleID1 = triID0 < triID1 ? triID1 : triID0;
     }
 
     int mTriangleID0;
     int mTriangleID1;
+
+    bool operator<( const TrianglePair& other) const
+    {
+        if( mTriangleID0 < other.mTriangleID0 )
+            return true;
+        else if( other.mTriangleID0 < mTriangleID0 )
+            return false;
+        else{
+            return mTriangleID1 < other.mTriangleID1;
+        }
+    }
 };
 
 struct EdgeTrianglePair
@@ -62,6 +84,18 @@ struct EdgeTrianglePair
     int  mTriangleID;
 
     float mHit_t;
+
+    bool operator<( const EdgeTrianglePair& other) const
+    {
+        if( mTriangleID < other.mTriangleID )
+            return true;
+        else if( other.mTriangleID < mTriangleID )
+            return false;
+        else{
+            return mEdge < other.mEdge;
+        }
+    }
+
 };
 
 struct EdgeCorrect
@@ -117,7 +151,7 @@ private:
     void calculateEdgeCorrectVector();
     void correctParticles();
 
-
+    Vec3 getTriangleNormal(int triangleID);
     bool testTriangleIntersect(int triangleID0, int triangleID1 );
     bool testEdgeTriangleIntersect(const Edge& edge, int Triangle, float& hit_t );
     Vec3 calculateGVector(const Edge& edge, int Triangle);

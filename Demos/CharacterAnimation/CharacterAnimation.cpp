@@ -62,12 +62,12 @@
         lastTime = now;
 
     if( m_pAnimator )
-        m_pAnimator->update( now - lastTime );
+        m_pAnimator->update( (float)(now - lastTime) );
 
     lastTime = now;
 
 
-     for( int i= 0, n = m_wf_meshes.size(); i<n ; ++i )
+     for( size_t i= 0, n = m_wf_meshes.size(); i<n ; ++i )
      {
          AnimationRenderable* pAnimationRenderable = dynamic_cast<AnimationRenderable*>(m_wf_meshes[i]);
          pAnimationRenderable->updateBoneMatrix( m_pAnimator->getBoneMatrices() );

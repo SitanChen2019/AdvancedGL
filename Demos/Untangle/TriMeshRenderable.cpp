@@ -61,3 +61,18 @@ void  TriMeshRenderable::render() {
 	glBindVertexArray(0);
 	glUseProgram(0);
 }
+
+void  TriMeshRenderable::updateVertices(const Vec3Sequence& vertices)
+{
+	assert(vertices.size() == m_buffers.m_vertexCount);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_buffers.m_vbo_vertives.Id());
+	Vec3* pPos = (Vec3*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+	if (pPos != nullptr)
+	{
+		memcpy_s(pPos, sizeof(Vec3) * vertices.size(), vertices.data(), sizeof(Vec3) * vertices.size());
+	}
+	glUnmapBuffer(GL_ARRAY_BUFFER);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}

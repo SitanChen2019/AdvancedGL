@@ -107,8 +107,8 @@ void BesizerRenderable::attach() {
 
     Vector<unsigned> indices;
     indices.reserve( controlsPoints.size() );
-    for( int i = 0; i < controlsPoints.size(); ++i )
-        indices.push_back(i);
+    for( size_t i = 0; i < controlsPoints.size(); ++i )
+        indices.push_back((unsigned)i);
 
     for( auto& vertex : controlsPoints)
         m_box.merge(vertex);
@@ -121,7 +121,7 @@ void BesizerRenderable::attach() {
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(int)*indices.size(), indices.data(), GL_STATIC_DRAW);
-    m_indicesCount = indices.size();
+    m_indicesCount = (unsigned)indices.size();
 
     glBindVertexArray(0);
 
