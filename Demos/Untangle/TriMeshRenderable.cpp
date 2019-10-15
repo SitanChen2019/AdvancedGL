@@ -58,7 +58,16 @@ void  TriMeshRenderable::render() {
 
 	glDrawElements(GL_TRIANGLES, m_buffers.m_indicesCount, GL_UNSIGNED_INT, 0);
 
+
+	//render a wireframe
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glUniform3f(m_diffuseAttrLoc, 1, 1, 1);
+	glDrawElements(GL_TRIANGLES, m_buffers.m_indicesCount, GL_UNSIGNED_INT, 0);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
 	glBindVertexArray(0);
+
+
 	glUseProgram(0);
 }
 

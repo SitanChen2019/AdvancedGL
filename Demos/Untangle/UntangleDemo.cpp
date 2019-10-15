@@ -14,7 +14,7 @@ bool UntangleDemo::init()
 	m_pUI = new UntangleDemoView(this);
 	Global::uiManager().addUIView(m_pUI);
 
-    ModelLoader loader("../Demos/Untangle/res/a.obj");
+    ModelLoader loader("../Demos/Untangle/res/e.obj");
     Vector<MeshData> tessellationDatas = loader.loadModel();
 
     //init solover
@@ -23,6 +23,7 @@ bool UntangleDemo::init()
     int vertex_offset = 0;
     int pid = 0;
     int tid = 0;
+	int meshID = 0;
     for(auto& meshdata : tessellationDatas )
     {
         for( auto& pos : meshdata.vertices )
@@ -31,7 +32,7 @@ bool UntangleDemo::init()
             p.mCurPosition = pos;
             p.mPrePosition = pos;
             p.mPID = pid++;
-            p.mInvMass = 0.1f;
+            p.mInvMass = meshID == 1 ? 0 :  0.1f;
             particles.push_back( p );
         }
 
@@ -47,6 +48,7 @@ bool UntangleDemo::init()
         }
 
 		vertex_offset += (int)meshdata.vertices.size();
+		++meshID;
     }
     UntangleSolver::singleton().init( std::move( particles), std::move(triangles) );
 
@@ -64,6 +66,7 @@ bool UntangleDemo::init()
 
     std::cout << "Mesh Count: " << tessellationDatas.size() << std::endl;
     m_meshes.at(0)->setDiffuse( Vec3(0.8,0,0));
+	m_meshes.at(1)->setDiffuse(Vec3(0.8, 0.8, 0));
 	Global::cameraControl().fitBox(m_box);
 
 	m_tessellationDatas.swap(tessellationDatas);
@@ -75,9 +78,6 @@ void UntangleDemo::exeOneStep()
     UntangleSolver::singleton().preUpdate();
     UntangleSolver::singleton().update();
     UntangleSolver::singleton().postUpdate();
-
-
-
 }
 
 bool UntangleDemo::update()

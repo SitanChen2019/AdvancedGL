@@ -5,6 +5,7 @@
 #include "UntangleSolver.h"
 #include "GeometryMath.h"
 #include "boost/container_hash/hash.hpp"
+#include <iostream>
 
 UntangleSolver& UntangleSolver::singleton()
 {
@@ -91,7 +92,11 @@ void UntangleSolver::calculateEdgeCorrectVector()
         const Edge& edge = edgeTri_pair.mEdge;
         int triangleID = edgeTri_pair.mTriangleID;
         Vec3 gvector = calculateGVector( edge,triangleID );
-        addEdgeCorrectVector( edge , gvector );
+        
+		addEdgeCorrectVector(Edge(edge.mTriangleID, 0), gvector);
+		addEdgeCorrectVector(Edge(edge.mTriangleID, 1), gvector);
+		addEdgeCorrectVector(Edge(edge.mTriangleID, 2), gvector);
+		//addEdgeCorrectVector( edge , gvector );
 
         //Vec3 gvector_for_triangle = -gvector;
         //addEdgeCorrectVector( Edge(triangleID,0), gvector);
@@ -107,8 +112,8 @@ void UntangleSolver::correctParticles()
         int p0 = edgeCorrect.first.mP0;
         int p1 = edgeCorrect.first.mP1;
 
-        m_particles[p0].mCurPosition += edgeCorrect.second.getOffset();
-        m_particles[p1].mCurPosition += edgeCorrect.second.getOffset();
+        m_particles[p0].mCurPosition += edgeCorrect.second.getOffset() * m_particles[p0].mInvMass;
+        m_particles[p1].mCurPosition += edgeCorrect.second.getOffset() * m_particles[p1].mInvMass;
     }
 }
 
@@ -168,6 +173,16 @@ bool UntangleSolver::testTriangleIntersect(int triangleID0, int triangleID1 )
     Triangle& t1 = m_triangles[triangleID0];
     Triangle& t2 = m_triangles[triangleID1];
 
+	int shareVertex = 0;
+	if (t1.p0 == t2.p0 || t1.p0 == t2.p1 || t1.p0 == t2.p2)
+		++shareVertex;
+	if (t1.p1 == t2.p0 || t1.p1 == t2.p1 || t1.p1 == t2.p2)
+		++shareVertex;
+	if (t1.p2 == t2.p0 || t1.p2 == t2.p1 || t1.p2 == t2.p2)
+		++shareVertex;
+	if (shareVertex > 0)
+		return false;
+
     return GeometryMath::isTriangleIntersect(
         m_particles[t1.p0].mCurPosition,m_particles[t1.p1].mCurPosition,m_particles[t1.p2].mCurPosition,
         m_particles[t2.p0].mCurPosition,m_particles[t2.p1].mCurPosition,m_particles[t2.p2].mCurPosition
@@ -178,6 +193,10 @@ bool UntangleSolver::testEdgeTriangleIntersect(const Edge& edge, int triangleID,
 {
     Triangle& t1 = m_triangles[triangleID];
 
+	if (edge.mP0 == 3 && edge.mP1 == 4)
+	{
+		std::cout << "catch" << std::endl;
+	}
     return GeometryMath::edgeTriangleIntersect(
         m_particles[edge.mP0].mCurPosition, m_particles[edge.mP1].mCurPosition,
         m_particles[t1.p0].mCurPosition,m_particles[t1.p1].mCurPosition,m_particles[t1.p2].mCurPosition,
@@ -215,5 +234,5 @@ Vec3 UntangleSolver::calculateGVector(const Edge& edge, int triangleID)
 	float tmp1 = glm::dot(E, R);
 	float tmp2 = glm::dot(E, N);
 	float tmp3 = tmp1 / tmp2;
-    return R -2*( glm::dot(E,R)/glm::dot(E,N) ) * N;
+    return R -( glm::dot(E,R)/glm::dot(E,N) ) * N;
 }
