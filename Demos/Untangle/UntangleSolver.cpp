@@ -192,11 +192,6 @@ bool UntangleSolver::testTriangleIntersect(int triangleID0, int triangleID1 )
 bool UntangleSolver::testEdgeTriangleIntersect(const Edge& edge, int triangleID, float& hit_t )
 {
     Triangle& t1 = m_triangles[triangleID];
-
-	if (edge.mP0 == 3 && edge.mP1 == 4)
-	{
-		std::cout << "catch" << std::endl;
-	}
     return GeometryMath::edgeTriangleIntersect(
         m_particles[edge.mP0].mCurPosition, m_particles[edge.mP1].mCurPosition,
         m_particles[t1.p0].mCurPosition,m_particles[t1.p1].mCurPosition,m_particles[t1.p2].mCurPosition,

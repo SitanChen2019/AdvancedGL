@@ -14,7 +14,7 @@ bool UntangleDemo::init()
 	m_pUI = new UntangleDemoView(this);
 	Global::uiManager().addUIView(m_pUI);
 
-    ModelLoader loader("../Demos/Untangle/res/e.obj");
+    ModelLoader loader("../Demos/Untangle/res/d.obj");
     Vector<MeshData> tessellationDatas = loader.loadModel();
 
     //init solover

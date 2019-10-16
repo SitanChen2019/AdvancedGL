@@ -42,13 +42,13 @@ namespace GeometryMath {
 		   to avoid dividing 0 error, we use the following formula:
 		*/
 
-		if (V0.x * V1.y != V1.x * V0.y)
+		if (fabs(V0.x * V1.y - V1.x * V0.y) > 1e-7 )
 			return 12;
 
-		if (V0.x * V1.z != V1.x * V0.z)
+		if (fabs(V0.x * V1.z - V1.x * V0.z) > 1e-7 )
 			return 13;
 
-		if (V0.y * V1.z != V1.y * V0.z)
+		if (fabs(V0.y * V1.z - V1.y * V0.z) > 1e-7)
 			return 23;
 
 		return 0;
@@ -131,40 +131,34 @@ namespace GeometryMath {
 		auto v = pV1;
 		auto k = pV2;
 
-		int choice = isTwoVectorOnSameLine(u, v);
-		if (choice == 0)
-		{
-			std::swap(v, k);
-			choice = isTwoVectorOnSameLine(u, v);
-		}
-
 		/*
 		Ux*a + Vx*b = Kx  ------- formual_1
 		Uy*a + Vy*b = Ky  ------- formual_2
 		Uz*a + Vz*b = Kz  ------- formual_3
 		*/
 		REAL denominator, numerator_a, numerator_b;
-		if (choice == 12)
+
+
+		REAL denominator_12 = fabs(u.x * v.y - u.y * v.x);
+		REAL denominator_13 = fabs(u.x * v.z - u.z * v.x);
+		REAL denominator_23 = fabs(u.y * v.z - u.z * v.y);
+		if (denominator_12 > denominator_13&& denominator_12 >= denominator_23)
 		{
 			denominator = u.x * v.y - u.y * v.x;
 			numerator_a = k.x * v.y - k.y * v.x;
 			numerator_b = -k.x * u.y + k.y * u.x;
 		}
-		else if (choice == 13)
+		else if (denominator_13 > denominator_12&& denominator_13 >= denominator_23)
 		{
 			denominator = u.x * v.z - u.z * v.x;
 			numerator_a = k.x * v.z - k.z * v.x;
 			numerator_b = -k.x * u.z + k.z * u.x;
 		}
-		else if (choice == 23)
+		else
 		{
 			denominator = u.y * v.z - u.z * v.y;
 			numerator_a = k.y * v.z - k.z * v.y;
 			numerator_b = -k.y * u.z + k.z * u.y;
-		}
-		else
-		{
-			assert(false);
 		}
 
 		if (isDifferentSignal(numerator_a, denominator) && isDifferentSignal(numerator_b, denominator))
