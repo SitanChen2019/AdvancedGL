@@ -197,10 +197,139 @@ namespace GeometryMath {
 		glm::vec3 r2 = tri.m_v2 - m_v2;
 
 
-		glm::vec3 e0 = tri.m_v0 - tri.m_v2;
-		glm::vec3 e1 = tri.m_v1 - tri.m_v2;
-
+		glm::vec3 e0 = m_v0 - m_v2;
+		glm::vec3 e1 = m_v1 - m_v2;
 		glm::vec3 n = glm::cross(e0, e1);
+
+		auto testT0T1crossE0E1 = [e0,e1,n](glm::vec3 t0, glm::vec3 t1)
+		{
+			int stage2_key = 0;
+			glm::vec3 e0t0 = glm::cross(e0, t0);
+			glm::vec3 e1t0 = glm::cross(e1, t0);
+			glm::vec3 e0t1 = glm::cross(e0, t1);
+			glm::vec3 e1t1 = glm::cross(e1, t1);
+
+			for (auto& vect : std::array<glm::vec3, 4>{e0t0, e1t0, e0t1, e1t1})
+			{
+				stage2_key = (stage2_key << 1) + ( glm::dot(vect, n) > 0 ? 1 : 0 );
+			}
+
+			int  result_matrix[16] = {
+				-1,-1,1,2,
+				-1,-1,4,-1,
+				1,4,3,1,
+				2,-1,1,-1
+			};
+			int stage2_case = result_matrix[stage2_key];
+
+			if (stage2_case == -1)
+				return false;
+			else if (stage2_case == 1)
+			{
+				glm::vec3 p_in = t0;
+				glm::vec3 p_out = t1;
+				if (stage2_key == 2 || stage2_key == 14)
+				{
+					p_in = t1;
+					p_out = t0;
+				}
+
+				glm::vec3 feature_edge = e0;
+				float signal = -1.0f;
+				if (stage2_key == 11 || stage2_key == 14)
+				{
+					feature_edge = e1;
+					signal = 1.0f;
+				}
+
+
+				//check p_in if in the triangle, if yes,must intersection
+				//(p_in - e0)x(p_in - e1) equidirectional to n
+				if (glm::dot(glm::cross(p_in - e0, p_in - e1), n) >= 0)
+				{
+					return true;
+				}
+				else if (glm::dot(glm::cross(p_out - feature_edge, p_in - feature_edge), signal * n) >= 0)
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+			else if (stage2_case == 2)
+			{
+				glm::vec3 p_3 = t0;
+				glm::vec3 p_1 = t1;
+
+				if (stage2_key == 12)
+				{
+					p_1 = t1;
+					p_3 = t0;
+				}
+
+				if (glm::dot(glm::cross(p_3, p_1), n) >= 0)
+				{
+					if (glm::dot(glm::cross(p_1 - e0, p_3 - e0), n) >= 0)
+					{
+						return true;
+					}
+					else if (glm::dot(glm::cross(p_1 - e1, p_3 - e1), n) >= 0)
+					{
+						return true;
+					}
+				}
+				else
+				{
+					return false;
+				}
+			}
+			else if (stage2_case == 3)
+			{
+				//test if t0 or t1 is in the triangle
+				if (glm::dot(glm::cross(t0 - e0, t0 - e1), n) >= 0)
+				{
+					return true;
+				}
+				else if (glm::dot(glm::cross(t1 - e0, t1 - e1), n) >= 0)
+				{
+					return true;
+				}
+				else
+					return false;
+			}
+			else if (stage2_case == 4)
+			{
+				glm::vec3 p_in = t0;
+				glm::vec3 p_out = t1;
+				if (stage2_key == 6)
+				{
+					p_in = t1;
+					p_out = t0;
+				}
+
+				if (glm::dot(glm::cross(p_in - e0, p_out - e0), n) >= 0)
+				{
+					return true;
+				}
+				if (glm::dot(glm::cross(p_out - e1, p_in - e1), n) >= 0)
+				{
+					return true;
+				}
+				else
+					return false;
+			}
+			else
+			{
+				assert(false);
+				return false;
+			}
+
+			return false;
+		};
+
+		
 		float D0 = glm::dot(r0, n);
 		float D1 = glm::dot(r1, n);
 		float D2 = glm::dot(r2, n);
@@ -211,28 +340,85 @@ namespace GeometryMath {
 
 		int sign_key = 0;
 		int near_zero_value = 0;
-		for (float value : std::array<float, 3>{D0,D1,D2})
+		
+		std::array<float, 3> d_array = { D2, D1, D0 };
+		for (int i = 0; i < d_array.size(); ++i)
 		{
+			float value = d_array[i];
 			if (value > 1e-5)
 			{
-				sign_key = (sign_key << 1) + 1;
+				sign_key |= (1 << i);
 
 			}
 			else if (value < -1e-5)
 			{
-				sign_key = (sign_key << 1) + 0;
+				//do nothing
 			}
 			else
 			{
-				++near_zero_num;
+				near_zero_num |= (1 << i);
 			}
 		}
 
 		glm::vec3 t0, t1;
-		if (near_zero_num > 0)
+		if (near_zero_num != 0)
 		{
-			//TODO
-			throw std::exception();
+			if (near_zero_num == 7)
+			{
+				//test if two coplanar triangle intersections
+				return testT0T1crossE0E1(r0, r1) || testT0T1crossE0E1(r0, r2) || testT0T1crossE0E1(r1, r2);
+			}
+			else if (near_zero_num == 6 || near_zero_num == 5 || near_zero_num == 3)
+			{
+				if (near_zero_num == 6) // D0 D1 is zero
+				{
+					t0 = r1;
+					t1 = r2;
+				}
+				else if (near_zero_num == 5) // D0 D2 is zero
+				{
+					t0 = r0;
+					t1 = r2;
+				}
+				else if ( near_zero_num == 3) //D1 D2 is zero
+				{
+					t0 = r1;
+					t1 = r2;
+				}
+			}
+			else if (near_zero_num == 4 || near_zero_num == 2 || near_zero_num == 1) 
+			{
+				//one is on the plane, the other two d should be different sign
+
+				if (near_zero_num == 4)
+				{
+					if ( (sign_key != 1) | (sign_key != 2) )
+						return false;
+					
+					float beta12 = D2 / (D2 - D1);
+					t0 = beta12 * r1 + (1 - beta12) * r2;
+					t1 = r1;
+
+				}
+				else if (near_zero_num == 2)
+				{
+					if ((sign_key != 4) | (sign_key != 1))
+						return false;
+	
+					float beta02 = D2 / (D2 - D0);
+					t0 = beta02 * r0 + (1 - beta02) * r2;
+					t1 = r1;
+				}
+				else if (near_zero_num == 1)
+				{
+					if ((sign_key != 4) | (sign_key != 2))
+						return false;
+
+					float beta01 = D1 / (D1 - D0);
+					t0 = beta01 * r0 + (1 - beta01) * r1;
+					t1 = r2;
+				}
+			}
 		}
 		else
 		{
@@ -245,8 +431,8 @@ namespace GeometryMath {
 				case 6:  //--+
 				{
 					//02,12
-					float beta02 = D0 / (D0 - D2);
-					float beta12 = D1 / (D1 - D2);
+					float beta02 = D2 / (D2 - D0);
+					float beta12 = D2 / (D2 - D1);
 					t0 = beta02 * r0 + (1 - beta02) * r2;
 					t1 = beta12 * r1 + (1 - beta12) * r2;
 				}
@@ -255,8 +441,8 @@ namespace GeometryMath {
 				case 5:  //+-+
 				{
 					//12,01
-					float beta12 = D1 / (D1 - D2);
-					float beta01 = D0 / (D0 - D1);
+					float beta12 = D2 / (D2 - D1);
+					float beta01 = D1 / (D1 - D0);
 					t0 = beta12 * r1 + (1 - beta12) * r2;
 					t1 = beta01 * r0 + (1 - beta01) * r1;
 				}
@@ -265,8 +451,8 @@ namespace GeometryMath {
 				case 4: //+--
 				{
 					//01,02
-					float beta01 = D0 / (D0 - D1);
-					float beta02 = D0 / (D0 - D2);
+					float beta01 = D1 / (D1 - D0);
+					float beta02 = D2 / (D2 - D0);
 					t0 = beta01 * r0 + (1 - beta01) * r1;
 					t1 = beta02 * r0 + (1 - beta02) * r2;
 				}
@@ -275,99 +461,8 @@ namespace GeometryMath {
 				break;
 			}
 		}
+		return testT0T1crossE0E1(t0, t1);
 
-		int stage2_key = 0;
-		glm::vec3 e0t0 = glm::cross(e0, t0);
-		glm::vec3 e1t0 = glm::cross(e1, t0);
-		glm::vec3 e0t1 = glm::cross(e0, t1);
-		glm::vec3 e1t1 = glm::cross(e1, t1);
-		
-		for (auto& vect : std::array<glm::vec3, 4>{e0t0, e1t0, e0t1, e1t1})
-		{
-			stage2_key = (stage2_key << 1) + glm::dot(vect, n) > 0 ? 1 : 0;
-		}
-
-		int  result_matrix[16] = {
-			-1,-1,1,2,
-			-1,-1,4,-1,
-			1,4,3,1,
-			2,-1,1,-1
-		};
-		int stage2_case = result_matrix[stage2_key];
-		
-		if (stage2_case == 1)
-		{
-			glm::vec3 p_in = t0;
-			glm::vec3 p_out = t1;
-			if (stage2_key == 2 || stage2_key == 14)
-			{
-				p_in = t1;
-				p_out = t0;
-			}
-
-			glm::vec3 feature_edge = e0;
-			float signal = -1.0f;
-			if (stage2_key == 11 || stage2_key == 14)
-			{
-				feature_edge = e1;
-				signal = 1.0f;
-			}
-
-
-			//check p_in if in the triangle, if yes,must intersection
-			//(p_in - e0)x(p_in - e1) equidirectional to n
-			if (glm::dot(glm::cross(p_in - e0, p_in - e1), n) >= 0)
-			{
-				return true;
-			}
-			else if( glm::dot( glm::cross(p_out - feature_edge, p_in -feature_edge) , signal*n ) >= 0)
-			{
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
-		else if (stage2_case == 2)
-		{
-			glm::vec3 p_3 = t0;
-			glm::vec3 p_1 = t1;
-
-			if (stage2_key == 12)
-			{
-				p_1 = t1;
-				p_3 = t0;
-			}
-
-			if (glm::dot(glm::cross(p_3, p_1), n) >= 0)
-			{
-				if (glm::dot(glm::cross(p_1 - e0, p_3 - e0), n) >= 0)
-				{
-					return true;
-				}
-				else if (glm::dot(glm::cross(p_1 - e1, p_3 - e1), n) >= 0)
-				{
-					return true;
-				}
-			}
-			else
-			{
-				return false;
-			}
-		}
-		else if (stage2_case == 3)
-		{
-
-		}
-		else if (stage2_case == 4)
-		{
-
-		}
-		else
-		{
-			assert(false);
-		}
 	}
 
 

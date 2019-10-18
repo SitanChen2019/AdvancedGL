@@ -99,9 +99,9 @@ void UntangleSolver::calculateEdgeCorrectVector()
 		//addEdgeCorrectVector( edge , gvector );
 
         //Vec3 gvector_for_triangle = -gvector;
-        //addEdgeCorrectVector( Edge(triangleID,0), gvector);
-        //addEdgeCorrectVector( Edge(triangleID,1), gvector);
-        //addEdgeCorrectVector( Edge(triangleID,2), gvector);
+        //addEdgeCorrectVector( Edge(triangleID,0), gvector_for_triangle);
+        //addEdgeCorrectVector( Edge(triangleID,1), gvector_for_triangle);
+        //addEdgeCorrectVector( Edge(triangleID,2), gvector_for_triangle);
     }
 }
 
@@ -112,8 +112,11 @@ void UntangleSolver::correctParticles()
         int p0 = edgeCorrect.first.mP0;
         int p1 = edgeCorrect.first.mP1;
 
-        m_particles[p0].mCurPosition += edgeCorrect.second.getOffset() * m_particles[p0].mInvMass;
-        m_particles[p1].mCurPosition += edgeCorrect.second.getOffset() * m_particles[p1].mInvMass;
+		Vec3 direction = edgeCorrect.second.getOffset();
+		direction = glm::normalize(direction);
+
+        m_particles[p0].mCurPosition += direction * m_particles[p0].mInvMass;
+        m_particles[p1].mCurPosition += direction * m_particles[p1].mInvMass;
     }
 }
 
@@ -215,19 +218,25 @@ Vec3 UntangleSolver::calculateGVector(const Edge& edge, int triangleID)
     Vec3 M = getTriangleNormal(edge.mTriangleID);
 
     Vec3 R = glm::cross(N,M);
+	Vec3 E = m_particles[edge.mP1].mCurPosition - m_particles[edge.mP0].mCurPosition;
+	E = glm::normalize(E);
 
     Triangle B = m_triangles[ edge.mTriangleID ];
     Vec3 inner_point_in_B = 0.5f*m_particles[B.p0].mCurPosition
             + 0.25f*m_particles[B.p1].mCurPosition + 0.25f*m_particles[B.p2].mCurPosition;
     Vec3 tmp = (inner_point_in_B - m_particles[ edge.mP0].mCurPosition);
-    if( glm::dot(tmp, R ) < 0 )
-        R = -R;
+	
 
-    Vec3 E = m_particles[edge.mP1].mCurPosition - m_particles[edge.mP0].mCurPosition;
-	E = glm::normalize(E);
+	//cross(tmp,E) should be equidirectional to cross(R,E)
+	if (glm::dot(glm::cross(tmp, E), glm::cross(R, E)) < 0)
+	{
+		R = -R;
+	}
+
 
 	float tmp1 = glm::dot(E, R);
 	float tmp2 = glm::dot(E, N);
 	float tmp3 = tmp1 / tmp2;
     return R -( glm::dot(E,R)/glm::dot(E,N) ) * N;
+
 }
