@@ -2,6 +2,7 @@
 #include "shader.h"
 #include <sstream>
 #include <fstream>
+#include "global.h"
 
 bool ShaderMgr::fileToString( std::string filePath , std::string& fileStr )
 {
@@ -143,18 +144,25 @@ ShaderCompileResult ShaderMgr::clearBuildTmps(ShaderCompileResult& result, Shade
 }
 
 void ShaderMgr::init() {
-    registerShader("simple", "../res/shader/simple.vs", "../res/shader/simple.fs");
-    registerShader("triangle", "../res/shader/triangle/triangle.vs",
-            "../res/shader/triangle/triangle.fs","../res/shader/triangle/triangle.gs");
+    registerShader("simple",
+       Global::SystemResPath("/shader/simple.vs"), Global::SystemResPath("/shader/simple.fs"));
+    registerShader("triangle",
+           Global::SystemResPath("/shader/triangle/triangle.vs"),
+            Global::SystemResPath("/shader/triangle/triangle.fs"),
+           Global::SystemResPath("/shader/triangle/triangle.gs"));
 
-    registerShader("tri_vn_pc", "../res/shader/tri_vn_pc/tri_vn_pc.vs",
-                   "../res/shader/tri_vn_pc/tri_vn_pc.fs");
+    registerShader("tri_vn_pc",
+                   Global::SystemResPath("/shader/tri_vn_pc/tri_vn_pc.vs"),
+                   Global::SystemResPath("/shader/tri_vn_pc/tri_vn_pc.fs"));
 
-    registerShader("shadow_depth", "../res/shader/shadow_depth/shadow_depth.vs",
-                   "../res/shader/shadow_depth/shadow_depth.fs");
+    registerShader("shadow_depth",
+                   Global::SystemResPath("/shader/shadow_depth/shadow_depth.vs"),
+                   Global::SystemResPath("/shader/shadow_depth/shadow_depth.fs"));
 
-    registerShader("tri_vn_shadow", "../res/shader/tri_vn_shadow/tri_vn_shadow.vs",
-                   "../res/shader/tri_vn_shadow/tri_vn_shadow.fs");
+    registerShader("tri_vn_shadow",
+                   Global::SystemResPath("/shader/tri_vn_shadow/tri_vn_shadow.vs"),
+                   Global::SystemResPath("/shader/tri_vn_shadow/tri_vn_shadow.fs"));
 
-    registerShader("simple_bone",  "../res/shader/simple_bone.vs", "../res/shader/tri_vn_pc/tri_vn_pc.fs");
+    registerShader("simple_bone",
+                   Global::SystemResPath("/shader/simple_bone.vs"), Global::SystemResPath("/shader/tri_vn_pc/tri_vn_pc.fs"));
 }

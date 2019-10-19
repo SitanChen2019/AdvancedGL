@@ -6,6 +6,59 @@
 #include "UntangleSolver.h"
 #include <GLFW/glfw3.h>
 
+void optimizeMesh(MeshData& meshData)
+{
+    auto checkTwoVertexOverlap = [](const Vec3& p0, const Vec3& p1)
+    {
+        const float E = 1e-7;
+        if( fabs(p0.x-p1.x) < E
+            && fabs(p0.y - p1.y ) < E
+            && fabs(p0.z - p1.z ) < E
+        )
+            return true;
+        return false;
+        };
+
+    Vec3Sequence  newVertexList;
+    newVertexList.reserve( meshData.vertices.size() );
+    std::map<int,int> indexConvertMap;
+    for( size_t i = 0, n = meshData.vertices.size(); i < n; ++i)
+    {
+        bool bOverlap = false;
+        for( size_t j = 0, m = newVertexList.size(); j < m; ++j )
+        {
+            if( checkTwoVertexOverlap(meshData.vertices[i], newVertexList[j]) )
+            {
+                bOverlap = true;
+                indexConvertMap.insert( {i,j});
+                break;
+            }
+        }
+
+        if( !bOverlap)
+        {
+            indexConvertMap.insert( {i,newVertexList.size()} );
+            newVertexList.push_back( meshData.vertices[i] );
+        }
+    };
+
+    if( newVertexList.size() == meshData.vertices.size() )
+        //no overlap
+        return;
+
+    Int32Sequence  newIndexSeq;
+    newIndexSeq.reserve( meshData.indices.size() );
+    for( auto oldIndex : meshData.indices )
+    {
+        newIndexSeq.push_back( indexConvertMap.at(oldIndex));
+    }
+
+    meshData.vertices.swap( newVertexList );
+    meshData.indices.swap( newIndexSeq );
+    meshData.normals.clear();
+    meshData.textCoors.clear();
+
+}
 
 bool UntangleDemo::init()
 {
@@ -14,8 +67,11 @@ bool UntangleDemo::init()
 	m_pUI = new UntangleDemoView(this);
 	Global::uiManager().addUIView(m_pUI);
 
-    ModelLoader loader("../Demos/Untangle/res/g.obj");
+    ModelLoader loader( Global::DemoPath("/Untangle/res/g.obj").c_str());
 	Vector<MeshData> tmpData = loader.loadModel();
+
+	for( int i = 0; i < tmpData.size(); ++i)
+        optimizeMesh(tmpData[i]);
 
 	Vector<MeshData> tessellationDatas;
 	tessellationDatas.push_back(tmpData.at(1));
@@ -117,3 +173,4 @@ bool UntangleDemo::destroy()
 
 	return true;
 }
+

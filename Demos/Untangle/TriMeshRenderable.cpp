@@ -43,8 +43,6 @@ void  TriMeshRenderable::render() {
 	glEnable(GL_DEPTH_TEST);
 	//glEnable(GL_CULL_FACE);
 
-	Matrix4 mat = Global::renderWindow().getProjViewMatrix();
-
 	glUseProgram(m_triangleShader->Id());
 	glBindVertexArray(m_vao);
 
@@ -79,7 +77,11 @@ void  TriMeshRenderable::updateVertices(const Vec3Sequence& vertices)
 	Vec3* pPos = (Vec3*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
 	if (pPos != nullptr)
 	{
-		memcpy_s(pPos, sizeof(Vec3) * vertices.size(), vertices.data(), sizeof(Vec3) * vertices.size());
+	    for( const Vec3& vertex : vertices )
+        {
+            (*pPos) = vertex;
+            ++pPos;
+        }
 	}
 	glUnmapBuffer(GL_ARRAY_BUFFER);
 

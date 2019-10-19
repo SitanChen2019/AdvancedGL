@@ -32,7 +32,7 @@ void  UIManager::onAttachRenderingWindow( RenderWindow* pWindow )
     pWindow->addRenderable( &m_queueEnd );
 
     float size_pixels = 20;
-    mFont = io.Fonts->AddFontFromFileTTF("../res/font/PINGFANG BOLD.TTF", size_pixels);
+    mFont = io.Fonts->AddFontFromFileTTF(Global::SystemResPath("/font/PINGFANG BOLD.TTF").c_str(), size_pixels);
 }
 
 void  UIManager::onRenderQueueStart(RenderWindow* pWindow, int pQueueID)

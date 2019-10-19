@@ -18,8 +18,6 @@ public:
 	bool destroy() override;
 
 	void exeOneStep() override;
-
-
 private:
 	AABB m_box;
 	std::vector<TriMeshRenderable*> m_meshes;

@@ -18,7 +18,7 @@ bool ModelDisplay::init() {
     m_pShadowRender = new ShadowRender();
     m_pShadowRender->initialize();
 
-    ModelLoader loader("../res/models/skirt_01/nvqun2.obj");
+    ModelLoader loader(Global::SystemResPath("/models/skirt_01/nvqun2.obj").c_str());
     Vector<MeshData> tessellationDatas = loader.loadModel();
 
     MeshData floor = Shape::createXZRectangle(3,3);

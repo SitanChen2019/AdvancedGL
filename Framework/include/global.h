@@ -39,5 +39,19 @@ public:
     static MouseStatus& mouseState() {
         return s_app.m_mouseStatus;
     }
+    
+    static const std::string SystemResPath( std::string subPath )
+    {
+        std::string path = "/Users/Sitan/git/AdvancedGL/res";
+        
+        return path + subPath;
+    }
+    
+    static const std::string DemoPath( std::string subPath )
+    {
+        std::string path = "/Users/Sitan/git/AdvancedGL/Demos";
+        
+        return path + subPath;
+    }
 };
 #endif //ADVANCEDGL_GLOBAL_H
