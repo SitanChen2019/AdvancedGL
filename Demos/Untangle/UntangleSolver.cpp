@@ -32,6 +32,12 @@ void UntangleSolver::update()
 
     calculateEdgeTriangleIntersection();
 
+	for (auto& it : m_collisionTrianglePair)
+	{
+		std::cout << it.mHitPos.size() << std::endl;
+	}
+	groupEdgeToContour();
+
     calculateEdgeCorrectVector();
 
     correctParticles();
@@ -60,14 +66,16 @@ void UntangleSolver::findCollisionTrianglePairs()
 void UntangleSolver::calculateEdgeTriangleIntersection()
 {
     m_collisionEdgeTrianglePair.clear();
-    for(const TrianglePair& tir_pair : m_collisionTrianglePair  )
+    for( auto it = m_collisionTrianglePair.begin(); it != m_collisionTrianglePair.end(); ++it)
     {
+		TrianglePair& tir_pair = const_cast<TrianglePair&>(*it);
         for( int i = 0; i< 3; ++i)
         {
             Edge edge( tir_pair.mTriangleID0, i );
             float hit_t = -1;
             if( testEdgeTriangleIntersect(edge, tir_pair.mTriangleID1, hit_t) )
             {
+				tir_pair.addHitPos(edge, hit_t);
                 m_collisionEdgeTrianglePair.insert(EdgeTrianglePair(edge, tir_pair.mTriangleID1, hit_t) );
             }
         }
@@ -78,35 +86,72 @@ void UntangleSolver::calculateEdgeTriangleIntersection()
             float hit_t = -1;
             if( testEdgeTriangleIntersect(edge, tir_pair.mTriangleID0,hit_t) )
             {
+				tir_pair.addHitPos(edge, hit_t);
                 m_collisionEdgeTrianglePair.insert(EdgeTrianglePair(edge, tir_pair.mTriangleID0,hit_t) );
             }
         }
     }
 }
 
+void UntangleSolver::groupEdgeToContour()
+{
+	m_contourCorrect.clear();
+	for (const EdgeTrianglePair& edgeTri_pair : m_collisionEdgeTrianglePair)
+	{
+		m_edgeToContour.insert({ edgeTri_pair.mEdge, 0 });
+	}
+}
 void UntangleSolver::calculateEdgeCorrectVector()
 {
+	m_contourToVertexMap.clear();
     m_edgeCorrects.clear();
     for( const EdgeTrianglePair& edgeTri_pair : m_collisionEdgeTrianglePair )
     {
+
         const Edge& edge = edgeTri_pair.mEdge;
+		if (m_particles[edge.mP0].mInvMass == 0)
+			continue;
+
         int triangleID = edgeTri_pair.mTriangleID;
         Vec3 gvector = calculateGVector( edge,triangleID );
         
+#ifdef GLOBAL_SCHEME
+		int contourID = m_edgeToContour.at(edge);
+		addContourCorrectVector(contourID, Edge(edge.mTriangleID, 0), gvector);
+		addContourCorrectVector(contourID, Edge(edge.mTriangleID, 1), gvector);
+		addContourCorrectVector(contourID, Edge(edge.mTriangleID, 2), gvector);
+#else
 		addEdgeCorrectVector(Edge(edge.mTriangleID, 0), gvector);
 		addEdgeCorrectVector(Edge(edge.mTriangleID, 1), gvector);
 		addEdgeCorrectVector(Edge(edge.mTriangleID, 2), gvector);
+
 		//addEdgeCorrectVector( edge , gvector );
 
-        //Vec3 gvector_for_triangle = -gvector;
-        //addEdgeCorrectVector( Edge(triangleID,0), gvector_for_triangle);
-        //addEdgeCorrectVector( Edge(triangleID,1), gvector_for_triangle);
-        //addEdgeCorrectVector( Edge(triangleID,2), gvector_for_triangle);
+		//Vec3 gvector_for_triangle = -gvector;
+		//addEdgeCorrectVector( Edge(triangleID,0), gvector_for_triangle);
+		//addEdgeCorrectVector( Edge(triangleID,1), gvector_for_triangle);
+		//addEdgeCorrectVector( Edge(triangleID,2), gvector_for_triangle);
+#endif
+
     }
 }
 
 void UntangleSolver::correctParticles()
 {
+#ifdef GLOBAL_SCHEME
+	for (const auto& contourCorrect : m_contourToVertexMap)
+	{
+		int contourId = contourCorrect.first;
+		Vec3 direction = m_contourCorrect[contourId].getOffset();
+		direction = glm::normalize(direction);
+
+		for (int vertexId : contourCorrect.second)
+		{
+			m_particles[vertexId].mCurPosition += direction * m_particles[vertexId].mInvMass;
+		}
+
+	}
+#else
     for( const auto& edgeCorrect : m_edgeCorrects  )
     {
         int p0 = edgeCorrect.first.mP0;
@@ -118,6 +163,8 @@ void UntangleSolver::correctParticles()
         m_particles[p0].mCurPosition += direction * m_particles[p0].mInvMass;
         m_particles[p1].mCurPosition += direction * m_particles[p1].mInvMass;
     }
+#endif
+
 }
 
 void UntangleSolver::addEdgeCorrectVector( const Edge& edge , const Vec3 correctVector)
@@ -129,6 +176,24 @@ void UntangleSolver::addEdgeCorrectVector( const Edge& edge , const Vec3 correct
     }
 
     it->second.addOffset( correctVector );
+}
+
+void UntangleSolver::addContourCorrectVector(int contourId, const Edge& edge, const Vec3 correctVector)
+{
+	auto it1 = m_contourToVertexMap.find(contourId);
+	if (it1 == m_contourToVertexMap.end())
+	{
+		it1 = m_contourToVertexMap.insert({ contourId, std::set<int>() }).first;
+	}
+	it1->second.insert(edge.mP0);
+	it1->second.insert(edge.mP1);
+
+	auto it = m_contourCorrect.find(contourId);
+	if (it == m_contourCorrect.end())
+	{
+		it = m_contourCorrect.insert(std::make_pair(contourId, EdgeCorrect())).first;
+	}
+	it->second.addOffset(correctVector);
 }
 
 Edge::Edge( int triangleID , int edgeLocalID )

@@ -10,6 +10,8 @@
 #include <set>
 #include <vector>
 
+#define GLOBAL_SCHEME
+
 struct Particle
 {
     Vec3 mPrePosition;
@@ -31,7 +33,7 @@ public:
 
 struct  Edge
 {
-    Edge( int triangleID , int edgeID );
+    Edge( int triangleID , int edgeLocalID );
 
     int mP0;
     int mP1;
@@ -53,6 +55,34 @@ struct  Edge
     }
 };
 
+struct TriangleHitPoint
+{
+	int mTriangleID;
+	Vec3 mHitCoordinate;
+
+	TriangleHitPoint( Edge edge , int t)
+		:mHitCoordinate(Vec3(0))
+	{
+		mTriangleID = edge.mTriangleID;
+		if (edge.mEdgeLocalID == 0)
+		{
+			mHitCoordinate = Vec3(t, 1 - t, 0);
+		}
+		else if (edge.mEdgeLocalID == 1)
+		{
+			mHitCoordinate = Vec3(0, t, 1 - t);
+		}
+		else if (edge.mEdgeLocalID == 2)
+		{
+			mHitCoordinate = Vec3(1 - t, 0, t);
+		}
+		else
+		{
+			assert(false);
+		}
+	}
+};
+
 struct TrianglePair
 {
     TrianglePair( int triID0, int triID1 )
@@ -64,6 +94,7 @@ struct TrianglePair
 
     int mTriangleID0;
     int mTriangleID1;
+	std::vector<TriangleHitPoint> mHitPos;
 
     bool operator<( const TrianglePair& other) const
     {
@@ -75,6 +106,11 @@ struct TrianglePair
             return mTriangleID1 < other.mTriangleID1;
         }
     }
+
+	void addHitPos(Edge edge , int t)
+	{
+		mHitPos.emplace_back(edge, t);
+	}
 };
 
 struct EdgeTrianglePair
@@ -148,6 +184,7 @@ private:
     //temp data
     void findCollisionTrianglePairs();
     void calculateEdgeTriangleIntersection();
+	void groupEdgeToContour();
     void calculateEdgeCorrectVector();
     void correctParticles();
 
@@ -156,13 +193,20 @@ private:
     bool testEdgeTriangleIntersect(const Edge& edge, int Triangle, float& hit_t );
     Vec3 calculateGVector(const Edge& edge, int Triangle);
     void addEdgeCorrectVector( const Edge& edge , const Vec3 correctVector);
+	void addContourCorrectVector(int contourID, const Edge& edge, const Vec3 correctVector);
 private:
     std::vector<Particle> m_particles;
     std::vector<Triangle> m_triangles;
 
     std::set<TrianglePair> m_collisionTrianglePair;
     std::set<EdgeTrianglePair> m_collisionEdgeTrianglePair;
+
+
     std::map<Edge,EdgeCorrect> m_edgeCorrects;
+
+	std::map<Edge, int> m_edgeToContour;
+	std::map<int, EdgeCorrect> m_contourCorrect;
+	std::map<int, std::set<int>> m_contourToVertexMap;
 
 };
 

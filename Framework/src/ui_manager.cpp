@@ -25,8 +25,8 @@ void  UIManager::onAttachRenderingWindow( RenderWindow* pWindow )
     ImGui_ImplGlfw_InitForOpenGL(pWindow->getGLFWWindow(), true);
 
 
-    const char* glslVersion = Global::appSetting().getGLSLVersion().c_str();
-    ImGui_ImplOpenGL3_Init(glslVersion);
+
+    ImGui_ImplOpenGL3_Init(Global::appSetting().getGLSLVersion().c_str());
 
     pWindow->addRenderable( &m_queueStart );
     pWindow->addRenderable( &m_queueEnd );

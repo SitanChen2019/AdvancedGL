@@ -42,15 +42,23 @@ public:
     
     static const std::string SystemResPath( std::string subPath )
     {
-        std::string path = "/Users/Sitan/git/AdvancedGL/res";
+#ifdef _MSC_BUILD
+		std::string path = "../res";
+#else
+		std::string path = "/Users/Sitan/git/AdvancedGL/res";
+#endif
+        
         
         return path + subPath;
     }
     
     static const std::string DemoPath( std::string subPath )
     {
-        std::string path = "/Users/Sitan/git/AdvancedGL/Demos";
-        
+#ifdef _MSC_BUILD
+		std::string path = "../Demos";
+#else
+		std::string path = "/Users/Sitan/git/AdvancedGL/Demos";
+#endif
         return path + subPath;
     }
 };
