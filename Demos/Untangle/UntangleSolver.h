@@ -9,8 +9,10 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <iostream>
+#include <glm/gtx/string_cast.hpp>
 
-#define GLOBAL_SCHEME
+//#define GLOBAL_SCHEME
 
 struct Particle
 {
@@ -33,6 +35,14 @@ public:
 
 struct  Edge
 {
+	Edge()
+	{
+		mP0 = -1;
+		mP1 = -1;
+		mTriangleID = -1;
+		mEdgeLocalID = -1;
+	}
+
     Edge( int triangleID , int edgeLocalID );
 
     int mP0;
@@ -41,7 +51,6 @@ struct  Edge
     int mTriangleID;
     int mEdgeLocalID;
 
-    size_t mEID;
 
     bool operator<( const Edge& other) const
     {
@@ -50,18 +59,32 @@ struct  Edge
         else if( other.mP0 < mP0 )
             return false;
         else{
-            return mP1 < other.mP1;
+			if (mP1 < other.mP1)
+				return true;
+			else if (mP1 > other.mP1)
+				return false;
+			else
+				return mTriangleID < other.mTriangleID;
         }
     }
+
+	bool isValid()
+	{
+		return mP0 > 0;
+	}
 };
 
 struct TriangleHitPoint
 {
 	int mTriangleID;
+	int mEdgeLocalID;
+	float m_t;
 	Vec3 mHitCoordinate;
 
-	TriangleHitPoint( Edge edge , int t)
+	TriangleHitPoint( Edge edge , float t)
 		:mHitCoordinate(Vec3(0))
+		,mEdgeLocalID(edge.mEdgeLocalID )
+		,m_t(t)
 	{
 		mTriangleID = edge.mTriangleID;
 		if (edge.mEdgeLocalID == 0)
@@ -82,6 +105,32 @@ struct TriangleHitPoint
 		}
 	}
 };
+
+
+struct VertexPair
+{
+	int mP0;
+	int mP1;
+
+	VertexPair( int p0, int p1)
+	{
+		mP0 = p0 < p1 ? p0 : p1;
+		mP1 = p0 < p1 ? p1 : p0;
+	}
+
+	bool operator<(const VertexPair& other) const
+	{
+		if (mP0 < other.mP0)
+			return true;
+		else if (other.mP0 < mP0)
+			return false;
+		else {
+			return mP1 < other.mP1;
+		}
+	}
+};
+
+
 
 struct TrianglePair
 {
@@ -107,7 +156,7 @@ struct TrianglePair
         }
     }
 
-	void addHitPos(Edge edge , int t)
+	void addHitPos(Edge edge , float t)
 	{
 		mHitPos.emplace_back(edge, t);
 	}
@@ -151,6 +200,7 @@ public:
     {
         mOffset += offset;
         mCount += 1;
+		//std::cout << glm::to_string(offset) << " " << glm::to_string(mOffset) << std::endl;
     }
 
     Vec3 getOffset() const
@@ -194,9 +244,17 @@ private:
     Vec3 calculateGVector(const Edge& edge, int Triangle);
     void addEdgeCorrectVector( const Edge& edge , const Vec3 correctVector);
 	void addContourCorrectVector(int contourID, const Edge& edge, const Vec3 correctVector);
+
+
+	Edge findAdjacentTriangleEdge(const Edge& edge);
+
+	void findContour(int edgeTraignleID, int triangleID, Edge currentEdge, int contourId);
+
 private:
     std::vector<Particle> m_particles;
     std::vector<Triangle> m_triangles;
+
+	std::map<VertexPair, std::array<Edge, 2>> m_shareEdgeMap;
 
     std::set<TrianglePair> m_collisionTrianglePair;
     std::set<EdgeTrianglePair> m_collisionEdgeTrianglePair;
@@ -204,7 +262,7 @@ private:
 
     std::map<Edge,EdgeCorrect> m_edgeCorrects;
 
-	std::map<Edge, int> m_edgeToContour;
+	std::map<EdgeTrianglePair, int> m_edgeToContour;
 	std::map<int, EdgeCorrect> m_contourCorrect;
 	std::map<int, std::set<int>> m_contourToVertexMap;
 

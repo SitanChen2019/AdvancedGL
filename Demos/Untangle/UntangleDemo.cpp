@@ -10,7 +10,7 @@ void optimizeMesh(MeshData& meshData)
 {
     auto checkTwoVertexOverlap = [](const Vec3& p0, const Vec3& p1)
     {
-        const float E = 1e-7;
+        const float E = 1e-7f;
         if( fabs(p0.x-p1.x) < E
             && fabs(p0.y - p1.y ) < E
             && fabs(p0.z - p1.z ) < E
@@ -22,10 +22,10 @@ void optimizeMesh(MeshData& meshData)
     Vec3Sequence  newVertexList;
     newVertexList.reserve( meshData.vertices.size() );
     std::map<int,int> indexConvertMap;
-    for( size_t i = 0, n = meshData.vertices.size(); i < n; ++i)
+    for( int i = 0, n = (int)meshData.vertices.size(); i < n; ++i)
     {
         bool bOverlap = false;
-        for( size_t j = 0, m = newVertexList.size(); j < m; ++j )
+        for( int j = 0, m = (int)newVertexList.size(); j < m; ++j )
         {
             if( checkTwoVertexOverlap(meshData.vertices[i], newVertexList[j]) )
             {
@@ -37,7 +37,7 @@ void optimizeMesh(MeshData& meshData)
 
         if( !bOverlap)
         {
-            indexConvertMap.insert( {i,newVertexList.size()} );
+            indexConvertMap.insert( {i,(int)newVertexList.size()} );
             newVertexList.push_back( meshData.vertices[i] );
         }
     };
@@ -67,7 +67,7 @@ bool UntangleDemo::init()
 	m_pUI = new UntangleDemoView(this);
 	Global::uiManager().addUIView(m_pUI);
 
-    ModelLoader loader( Global::DemoPath("/Untangle/res/g.obj").c_str());
+    ModelLoader loader( Global::DemoPath("/Untangle/res/a.obj").c_str());
 	Vector<MeshData> tessellationDatas = loader.loadModel();
 
 	for( int i = 0; i < tessellationDatas.size(); ++i)

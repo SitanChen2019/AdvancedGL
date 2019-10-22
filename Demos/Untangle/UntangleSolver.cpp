@@ -17,6 +17,57 @@ void UntangleSolver::init( std::vector<Particle>&& particles, std::vector<Triang
 {
     m_particles.swap( particles );
     m_triangles.swap( triangles );
+
+
+	for (size_t i = 0, n = m_triangles.size(); i < n; ++i)
+	{
+		const Triangle& tri = m_triangles[i];
+
+		std::array<VertexPair,3> vertexPairArray{ VertexPair{tri.p0, tri.p1}, {tri.p1, tri.p2}, {tri.p2, tri.p0} };
+		std::array<int,3> localEdgeIds = { 0,1,2 };
+
+		for ( size_t j = 0;j < vertexPairArray.size(); ++j )
+		{
+			const auto& vetex_pair = vertexPairArray[j];
+			int localEdgeID = localEdgeIds[j];
+
+			auto it = m_shareEdgeMap.find(vetex_pair);
+			if (it == m_shareEdgeMap.end())
+			{
+				it = m_shareEdgeMap.insert({ vetex_pair, {} }).first;
+				it->second[0] = Edge(tri.mTID, localEdgeID);
+			}
+			else if (it->second.at(1).isValid() == false)
+			{
+				it->second[1]= Edge(tri.mTID, localEdgeID);
+			}
+			else
+			{
+				//one edge can be shared at most by tow triangles
+				assert(false);
+			}
+		}
+	}
+}
+
+Edge UntangleSolver::findAdjacentTriangleEdge( const Edge& edge)
+{
+	Edge ret;
+	auto it = m_shareEdgeMap.find({ edge.mP0, edge.mP1 });
+	
+	if (it == m_shareEdgeMap.end())
+		return ret;
+
+	for (auto& edgeItem : it->second)
+	{
+		if (edgeItem.isValid() == false)
+			return ret;
+
+		if (edgeItem.mTriangleID != edge.mTriangleID)
+			return edgeItem;
+	}
+
+	return ret;
 }
 
 void UntangleSolver::preUpdate() {
@@ -34,7 +85,7 @@ void UntangleSolver::update()
 
 	for (auto& it : m_collisionTrianglePair)
 	{
-		std::cout << it.mHitPos.size() << std::endl;
+		assert( it.mHitPos.size() == 2);
 	}
 	groupEdgeToContour();
 
@@ -62,7 +113,7 @@ void UntangleSolver::findCollisionTrianglePairs()
         }
     }
 }
-
+  
 void UntangleSolver::calculateEdgeTriangleIntersection()
 {
     m_collisionEdgeTrianglePair.clear();
@@ -96,10 +147,22 @@ void UntangleSolver::calculateEdgeTriangleIntersection()
 void UntangleSolver::groupEdgeToContour()
 {
 	m_contourCorrect.clear();
-	for (const EdgeTrianglePair& edgeTri_pair : m_collisionEdgeTrianglePair)
+	m_edgeToContour.clear();
+	int contourId = -1;
+	for (auto& edgeTrianglePair : m_collisionEdgeTrianglePair)
 	{
-		m_edgeToContour.insert({ edgeTri_pair.mEdge, 0 });
+		m_edgeToContour.insert({ edgeTrianglePair, 0 });
+
+		//auto it = m_edgeToContour.find(edgeTrianglePair);
+		//if (it != m_edgeToContour.end())
+		//	continue;
+
+		//contourId += 1;
+		//m_edgeToContour.insert({ edgeTrianglePair, contourId });
+		//findContour(edgeTrianglePair.mEdge.mTriangleID, edgeTrianglePair.mTriangleID, edgeTrianglePair.mEdge, contourId);
 	}
+
+
 }
 void UntangleSolver::calculateEdgeCorrectVector()
 {
@@ -116,7 +179,7 @@ void UntangleSolver::calculateEdgeCorrectVector()
         Vec3 gvector = calculateGVector( edge,triangleID );
         
 #ifdef GLOBAL_SCHEME
-		int contourID = m_edgeToContour.at(edge);
+		int contourID = m_edgeToContour.at(edgeTri_pair);
 		addContourCorrectVector(contourID, Edge(edge.mTriangleID, 0), gvector);
 		addContourCorrectVector(contourID, Edge(edge.mTriangleID, 1), gvector);
 		addContourCorrectVector(contourID, Edge(edge.mTriangleID, 2), gvector);
@@ -223,9 +286,7 @@ Edge::Edge( int triangleID , int edgeLocalID )
         assert(false);
     }
 
-    mEID= 0;
-    boost::hash_combine(mEID,mP0);
-    boost::hash_combine(mEID,mP1);
+
 
 }
 
@@ -304,4 +365,71 @@ Vec3 UntangleSolver::calculateGVector(const Edge& edge, int triangleID)
 	float tmp3 = tmp1 / tmp2;
     return R -( glm::dot(E,R)/glm::dot(E,N) ) * N;
 
+}
+
+
+void UntangleSolver::findContour(int edgeTraignleID, int triangleID, Edge currentHitedge, int contourId)
+{
+	auto it = m_collisionTrianglePair.find({ edgeTraignleID, triangleID });
+
+	assert(it != m_collisionTrianglePair.end());
+
+	assert(it->mHitPos.size() == 2);
+
+	int currentHitIdx = 0;
+	if (it->mHitPos[0].mTriangleID == currentHitedge.mTriangleID && it->mHitPos[0].mEdgeLocalID == currentHitedge.mEdgeLocalID )
+	{
+		currentHitIdx = 0;
+	}
+	else if( it->mHitPos[1].mTriangleID == currentHitedge.mTriangleID && it->mHitPos[1].mEdgeLocalID == currentHitedge.mEdgeLocalID)
+	{
+		currentHitIdx = 1;
+	}
+	else
+	{
+		assert(false);
+	}
+
+	int theOtherHitIdx = 1 - currentHitIdx;
+
+	if (it->mHitPos[theOtherHitIdx].mTriangleID == edgeTraignleID )
+	{
+		//two hit points on the same triangle
+		Edge adjacentTriangleEdge;
+		Edge hitEdge = Edge(edgeTraignleID, it->mHitPos[theOtherHitIdx].mEdgeLocalID);
+		EdgeTrianglePair edgeTraignlePair = EdgeTrianglePair(hitEdge, triangleID, it->mHitPos[theOtherHitIdx].m_t);
+		bool isInserted = m_edgeToContour.insert({ edgeTraignlePair, contourId }).second;
+		if (!isInserted)
+		{
+			assert(m_edgeToContour[edgeTraignlePair] == contourId);
+			return;
+		}
+
+		//replace EdgeTriangle 
+		adjacentTriangleEdge = findAdjacentTriangleEdge(hitEdge);
+		if (!adjacentTriangleEdge.isValid())
+			return;
+		edgeTraignlePair = EdgeTrianglePair(adjacentTriangleEdge, triangleID, it->mHitPos[theOtherHitIdx].m_t);
+		isInserted = m_edgeToContour.insert({ edgeTraignlePair, contourId }).second;
+		if (!isInserted)
+		{
+			//find a ring
+			assert(m_edgeToContour[edgeTraignlePair] == contourId);
+			return;
+		}
+		else
+		{
+			findContour(adjacentTriangleEdge.mTriangleID, triangleID, adjacentTriangleEdge, contourId);
+		}
+	}
+	else
+	{
+		Edge theOtherHitEdge = Edge(it->mHitPos[theOtherHitIdx].mTriangleID, it->mHitPos[theOtherHitIdx].mEdgeLocalID);
+
+		Edge adjacentTriangle = findAdjacentTriangleEdge(theOtherHitEdge);
+		if (!adjacentTriangle.isValid())
+			return;
+
+		findContour(edgeTraignleID, adjacentTriangle.mTriangleID, adjacentTriangle, contourId);
+	}
 }

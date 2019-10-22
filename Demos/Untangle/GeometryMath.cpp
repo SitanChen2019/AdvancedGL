@@ -265,8 +265,8 @@ namespace GeometryMath {
 
 				if (stage2_key == 12)
 				{
-					p_1 = t1;
-					p_3 = t0;
+					p_3 = t1;
+					p_1 = t0;
 				}
 
 				if (glm::dot(glm::cross(p_3, p_1), n) >= 0)
@@ -279,6 +279,8 @@ namespace GeometryMath {
 					{
 						return true;
 					}
+					else
+						return false;
 				}
 				else
 				{
