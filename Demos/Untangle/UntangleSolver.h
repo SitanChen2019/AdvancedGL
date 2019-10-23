@@ -12,7 +12,7 @@
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 
-//#define GLOBAL_SCHEME
+
 
 struct Particle
 {
@@ -230,6 +230,25 @@ public:
     void update();
     void postUpdate();
 
+	bool isGlobalScheme()
+	{
+		return m_isGlobalScheme;
+	}
+
+	void setGlobalScheme(bool bValue)
+	{
+		m_isGlobalScheme = bValue;
+	}
+
+	void updateParticleInvMass(size_t beginIdx, size_t endIdx, float value)
+	{
+		for (size_t i = beginIdx; i < endIdx; ++i)
+		{
+			if (i < m_particles.size())
+				m_particles[i].mInvMass = value;
+		}
+	}
+
 private:
     //temp data
     void findCollisionTrianglePairs();
@@ -245,12 +264,14 @@ private:
     void addEdgeCorrectVector( const Edge& edge , const Vec3 correctVector);
 	void addContourCorrectVector(int contourID, const Edge& edge, const Vec3 correctVector);
 
-
+	bool testTwoTriangleEdgeCollision( TrianglePair& triPair);
 	Edge findAdjacentTriangleEdge(const Edge& edge);
 
 	void findContour(int edgeTraignleID, int triangleID, Edge currentEdge, int contourId);
 
 private:
+	bool m_isGlobalScheme = true;
+
     std::vector<Particle> m_particles;
     std::vector<Triangle> m_triangles;
 

@@ -50,6 +50,8 @@ GLFWwindow* RenderWindow::getGLFWWindow() {
 
 void RenderWindow::onResizeWindow(int width, int height)
 {
+	if (width == 0 && height == 0)
+		return;
     m_winWidth = width;
     m_winHeight = height;
     fireWindowEvent();

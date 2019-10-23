@@ -66,7 +66,7 @@ namespace GeometryMath {
 	}
 
 	bool Triangle::intersect_segment(const Vec3& p0, const Vec3& p1, REAL& t) const
-	{
+	{	
 		if (p0 == p1)
 		{
 			if (glm::dot(m_normal, p0 - m_v0) == 0)
@@ -311,16 +311,26 @@ namespace GeometryMath {
 					p_out = t0;
 				}
 
-				if (glm::dot(glm::cross(p_in - e0, p_out - e0), n) >= 0)
+				if (glm::dot(glm::cross(p_in, p_out), n) >= 0)
 				{
-					return true;
-				}
-				if (glm::dot(glm::cross(p_out - e1, p_in - e1), n) >= 0)
-				{
-					return true;
+					if (glm::dot(glm::cross(p_out - e1, p_in - e1), n) >= 0)
+					{
+						return true;
+					}
+					else
+						return false;
 				}
 				else
-					return false;
+				{
+					if (glm::dot(glm::cross(p_in - e0, p_out - e0), n) >= 0)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
 			}
 			else
 			{
@@ -344,15 +354,16 @@ namespace GeometryMath {
 		int near_zero_value = 0;
 		
 		std::array<float, 3> d_array = { D2, D1, D0 };
+		float E = std::numeric_limits<float>::epsilon();
 		for (int i = 0; i < d_array.size(); ++i)
 		{
 			float value = d_array[i];
-			if (value > 1e-5)
+			if (value > E)
 			{
 				sign_key |= (1 << i);
 
 			}
-			else if (value < -1e-5)
+			else if (value < -E)
 			{
 				//do nothing
 			}
@@ -374,8 +385,8 @@ namespace GeometryMath {
 			{
 				if (near_zero_num == 6) // D0 D1 is zero
 				{
-					t0 = r1;
-					t1 = r2;
+					t0 = r0;
+					t1 = r1;
 				}
 				else if (near_zero_num == 5) // D0 D2 is zero
 				{
