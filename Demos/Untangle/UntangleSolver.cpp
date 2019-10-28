@@ -241,6 +241,11 @@ void UntangleSolver::calculateEdgeCorrectVector()
 			addContourCorrectVector(contourID, Edge(edge.mTriangleID, 0), gvector);
 			addContourCorrectVector(contourID, Edge(edge.mTriangleID, 1), gvector);
 			addContourCorrectVector(contourID, Edge(edge.mTriangleID, 2), gvector);
+
+			Vec3 gvector_for_triangle = -gvector;
+			addContourCorrectVector(-1 -contourID, Edge(triangleID,0), gvector_for_triangle);
+			addContourCorrectVector(-1 - contourID, Edge(triangleID,1), gvector_for_triangle);
+			addContourCorrectVector(-1 - contourID, Edge(triangleID,2), gvector_for_triangle);
 		}
 		else
 		{
@@ -266,7 +271,7 @@ void UntangleSolver::correctParticles()
 		{
 			int contourId = contourCorrect.first;
 			Vec3 direction = m_contourCorrect[contourId].getOffset();
-			if (glm::length(direction) == 0)
+			if (glm::length(direction) < 1e-7)
 				continue;
 			direction = glm::normalize(direction);
 

@@ -79,7 +79,7 @@ bool UntangleDemo::init()
 	m_pUI = new UntangleDemoView(this);
 	Global::uiManager().addUIView(m_pUI);
 
-	loadModel(Global::DemoPath("/Untangle/res/f.obj"));
+	loadModel(Global::DemoPath("/Untangle/res/a.obj"));
 	return true;
 }
 
