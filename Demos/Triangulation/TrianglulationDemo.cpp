@@ -239,28 +239,55 @@ void TrianglulationDemo::quicktest()
 		return ;
 }
 
+#define PUSH_V(x,y) vertices.push_back(Vec2(x,y));
 
-std::string TrianglulationDemo::fillInputData1(triangulateio& input_data)
+void TrianglulationDemo::fillInputData1(triangulateio& input_data)
 {
 	input_data = triangulateio{ 0 };
 	Vector<Vec2> vertices;
 
-	vertices.push_back(Vec2(0, 0));
-	vertices.push_back(Vec2(1, 0));
-	vertices.push_back(Vec2(1, 1));
-	vertices.push_back(Vec2(0, 1));
-	vertices.push_back(Vec2(0.5, 0.5));
+	vertices.push_back(Vec2((3.59, 3.05)));
+	vertices.push_back(Vec2(7.63,1.25));
+	vertices.push_back(Vec2(13.97,1.57));
+	vertices.push_back(Vec2(15.03, 5.65));
+	vertices.push_back(Vec2(13.41,9.17));
+	vertices.push_back(Vec2(9.55, 9.01));
+	vertices.push_back(Vec2(4.17,7.15));
+
+	Vector<int> segments;
+	segments.reserve(2 * vertices.size());
+	for (size_t i = 0, n = vertices.size(); i < n; ++i)
+	{
+		segments.push_back(i);
+		segments.push_back(i+1);
+	}
+	segments.back() = 0;
+
+	int vertexOffset = vertices.size();
+
+	PUSH_V(7.47, 8.21);
+	vertices.push_back(Vec2(8.13,7.11));
+	vertices.push_back(Vec2(8.87,5.75));
+	vertices.push_back(Vec2(10,4));
+	PUSH_V(11.25, 1.65);
+
+
+	for (int i = vertexOffset; i < vertices.size() - 1; ++i)
+	{
+		segments.push_back(i);
+		segments.push_back(i + 1);
+	}
 
 	input_data.numberofpoints = (int)vertices.size();
 	input_data.pointlist = new float[vertices.size() * 2];
 	memcpy_s(input_data.pointlist, vertices.size() * 2 * sizeof(float), vertices.data(), vertices.size() * sizeof(Vec2));
 
-	//input_data.numberofpointattributes = 1;
-	//input_data.pointattributelist = new float[vertices.size() * input_data.numberofpointattributes]{0};
-	//input_data.pointmarkerlist = new int[vertices.size()]{ 0 };
-	
-	printf(":dd");
-	return "pczAe";
+
+	input_data.numberofsegments = segments.size() / 2;
+	input_data.segmentlist = new int[segments.size()];
+	memcpy_s(input_data.segmentlist, sizeof(int) * segments.size(), segments.data(), segments.size() * sizeof(int));
+
+	return;
 }
 
 void TrianglulationDemo::createMeshes(const triangulateio& data, std::set< IRenderable*>& meshGroup)
@@ -294,6 +321,19 @@ void TrianglulationDemo::createMeshes(const triangulateio& data, std::set< IRend
 
 		int* pData = data.edgelist;
 		for (size_t i = 0; i < data.numberofedges; ++i)
+		{
+			edgeIndices.push_back((unsigned)*pData);
+			++pData;
+			edgeIndices.push_back((unsigned)*pData);
+			++pData;
+		}
+	}
+	else if (data.numberofsegments > 0)
+	{
+		edgeIndices.reserve(data.numberofsegments);
+
+		int* pData = data.segmentlist;
+		for (size_t i = 0; i < data.numberofsegments; ++i)
 		{
 			edgeIndices.push_back((unsigned)*pData);
 			++pData;
@@ -360,30 +400,34 @@ void TrianglulationDemo::createMeshes(const triangulateio& data, std::set< IRend
 
 bool TrianglulationDemo::init()
 {
+	m_pUI = new TriangulationUIView(this);
+	Global::uiManager().addUIView(m_pUI);
+
 	//quicktest();
 	triangulateio input{0};
-	std::string paramter_str = fillInputData1(input);
-	char* str = const_cast<char*>(paramter_str.c_str());
-	triangulateio output{ 0 };
-	triangulate(str, &input, &output, nullptr);
-
+	fillInputData1(input);
 	createMeshes(input, m_preMeshes);
+
+	triangulateio output{ 0 };
+	triangulate("pzea0.5", &input, &output, nullptr);
 	createMeshes(output, m_postMeshes);
 	
-	free(output.pointlist);
-	free(output.pointattributelist);
-	free(output.pointmarkerlist);
-	free(output.trianglelist);
-	free(output.triangleattributelist);
-	free(output.trianglearealist);
-	free(output.neighborlist);
-	free(output.segmentlist);
-	free(output.segmentmarkerlist);
-	free(output.edgelist);
-	free(output.edgemarkerlist);
+	triangulateio tmp{ 0 };
+	triangulateio tmp1{ 0 };
+	triangulateio tmp2{ 0 };
+	triangulateio tmp3{ 0 };
+	triangulateio refine{ 0 };
+	triangulate("pze", &input, &tmp, nullptr);
+	triangulate("pzea2.0f", &tmp, &tmp1, nullptr);
+	triangulate("pzea2.0f", &tmp1, &tmp2, nullptr);
+	triangulate("pzea1.0f", &tmp2, &tmp3, nullptr);
+	triangulate("pzea0.5f", &tmp3, &refine, nullptr);
+
+	createMeshes(tmp1, m_refineMesh);
+
+	displayPostModel();
 
 	Global::cameraControl().fitBox(m_box);
-
 	return true;
 }
 
@@ -401,6 +445,13 @@ bool TrianglulationDemo::destroy()
 {
 	removeMeshGroup(m_preMeshes);
 	removeMeshGroup(m_postMeshes);
+	removeMeshGroup(m_refineMesh);
+
+	
+	Global::uiManager().removeUIView(m_pUI);
+	delete m_pUI;
+	m_pUI = nullptr;
+
 	return true;
 }
 
@@ -411,7 +462,33 @@ void TrianglulationDemo::removeMeshGroup(std::set<IRenderable*>& meshGroup)
 		Global::renderWindow().removeRenderable(pRenderable);
 		delete pRenderable;
 	}
-
 	meshGroup.clear();
+}
 
+void TrianglulationDemo::showMeshGroup(const std::set<IRenderable*>& meshGroup, bool enable)
+{
+	for (auto pRenderable : meshGroup)
+		pRenderable->setEnabel(enable);
+
+}
+
+void TrianglulationDemo::displayPreModel()
+{
+	showMeshGroup(m_preMeshes,true);
+	showMeshGroup(m_postMeshes, false);
+	showMeshGroup(m_refineMesh, false);
+}
+
+void TrianglulationDemo::displayPostModel()
+{
+	showMeshGroup(m_preMeshes, false);
+	showMeshGroup(m_postMeshes, true);
+	showMeshGroup(m_refineMesh, false);
+}
+
+void TrianglulationDemo::displayRefineModel()
+{
+	showMeshGroup(m_preMeshes, false);
+	showMeshGroup(m_postMeshes, false);
+	showMeshGroup(m_refineMesh, true);
 }

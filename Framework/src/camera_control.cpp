@@ -33,8 +33,8 @@ void CameraControl::fitBox( const AABB&  box)
     }
     else
     {
-        lookDir =  Vec3(0,0,1);
-        up = Vec3(0,1,0);
+        lookDir =  Vec3(0,0,-1);
+        up = Vec3(0,-1,0);
     }
 
 
