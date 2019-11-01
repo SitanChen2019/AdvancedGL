@@ -371,29 +371,51 @@ bool UntangleSolver::testTriangleIntersect(int triangleID0, int triangleID1 )
     Triangle& t2 = m_triangles[triangleID1];
 
 	int shareVertex = 0;
-	if (t1.p0 == t2.p0 || t1.p0 == t2.p1 || t1.p0 == t2.p2)
-		++shareVertex;
-	if (t1.p1 == t2.p0 || t1.p1 == t2.p1 || t1.p1 == t2.p2)
-		++shareVertex;
-	if (t1.p2 == t2.p0 || t1.p2 == t2.p1 || t1.p2 == t2.p2)
-		++shareVertex;
-	if (shareVertex > 0)
-		return false;
+    int sharedVertexID = -1;
 
-    bool ret1 =  GeometryMath::isTriangleIntersect(
-        m_particles[t1.p0].mCurPosition,m_particles[t1.p1].mCurPosition,m_particles[t1.p2].mCurPosition,
-        m_particles[t2.p0].mCurPosition,m_particles[t2.p1].mCurPosition,m_particles[t2.p2].mCurPosition
-            );
+    if (t1.p0 == t2.p0 || t1.p0 == t2.p1 || t1.p0 == t2.p2)
+    {
+        ++shareVertex;
+        sharedVertexID = t1.p0;
+    }
+    if (t1.p1 == t2.p0 || t1.p1 == t2.p1 || t1.p1 == t2.p2)
+    {
+        ++shareVertex;
+        sharedVertexID = t1.p1;
+    }
+    if (t1.p2 == t2.p0 || t1.p2 == t2.p1 || t1.p2 == t2.p2)
+    {
+        ++shareVertex;
+        sharedVertexID = t1.p2;
+    }
 
-	//TrianglePair tri_pair(triangleID0, triangleID1);
-	//bool ret2 = testTwoTriangleEdgeCollision(tri_pair);
+    if (shareVertex == 0)
+    {
 
-	//if (ret1 != ret2)
-	//{
-	//	generateDebugCode(m_particles[t1.p0].mCurPosition, m_particles[t1.p1].mCurPosition, m_particles[t1.p2].mCurPosition,
-	//		m_particles[t2.p0].mCurPosition, m_particles[t2.p1].mCurPosition, m_particles[t2.p2].mCurPosition);
-	//}
-	return ret1;
+        bool ret1 = GeometryMath::isTriangleIntersect(
+            m_particles[t1.p0].mCurPosition, m_particles[t1.p1].mCurPosition, m_particles[t1.p2].mCurPosition,
+            m_particles[t2.p0].mCurPosition, m_particles[t2.p1].mCurPosition, m_particles[t2.p2].mCurPosition
+        );
+
+        //TrianglePair tri_pair(triangleID0, triangleID1);
+        //bool ret2 = testTwoTriangleEdgeCollision(tri_pair);
+
+        //if (ret1 != ret2)
+        //{
+        //	generateDebugCode(m_particles[t1.p0].mCurPosition, m_particles[t1.p1].mCurPosition, m_particles[t1.p2].mCurPosition,
+        //		m_particles[t2.p0].mCurPosition, m_particles[t2.p1].mCurPosition, m_particles[t2.p2].mCurPosition);
+        //}
+        return ret1;
+    }
+    else if(shareVertex == 1)
+    {
+        return GeometryMath::isSharedSingleVertexTriangleIntersect(
+            m_particles[t1.p0].mCurPosition, m_particles[t1.p1].mCurPosition, m_particles[t1.p2].mCurPosition,
+            m_particles[t2.p0 == sharedVertexID ? t2.p1:t2.p0].mCurPosition, 
+            m_particles[t2.p1 == sharedVertexID ? t2.p2:t2.p1].mCurPosition);
+
+    }
+
 }
 
 bool UntangleSolver::testEdgeTriangleIntersect(const Edge& edge, int triangleID, float& hit_t )

@@ -158,6 +158,15 @@ struct TrianglePair
 
 	void addHitPos(Edge edge , float t)
 	{
+        TriangleHitPoint tmp(edge,t);
+        if (t == 0 || t == 1)
+        {
+            for (auto& data : mHitPos)
+            {
+                if (data.mHitCoordinate == tmp.mHitCoordinate)
+                    return;
+            }
+        }
 		mHitPos.emplace_back(edge, t);
 	}
 };

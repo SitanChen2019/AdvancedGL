@@ -185,6 +185,39 @@ namespace GeometryMath {
 	//}
 
 
+    //p0 and p1 are the tow vertices that are not shared
+    bool Triangle::intersect_shared_vertex_traingle( const Vec3& p0, const Vec3& p1) const
+    {
+        glm::vec3 r0 = p0 - m_v2;
+        glm::vec3 r1 = p1 - m_v2;
+
+        glm::vec3 e0 = m_v0 - m_v2;
+        glm::vec3 e1 = m_v1 - m_v2;
+        glm::vec3 n = glm::cross(e0, e1);
+
+        float D0 = glm::dot(r0, n);
+		float D1 = glm::dot(r1, n);
+
+        if (D0 * D1 > 0)
+            return false;
+
+        //D0 and D1 must be have different signal to ensure there is a hit point on the plane
+        float beta01 = D1 / (D1 - D0);
+        glm::vec3  t0 = beta01 * r0 + (1 - beta01) * r1;
+  
+        //only if t0 is in (+,-) then there is a intersection
+        glm::vec3 e0t0 = glm::cross(e0, t0);
+        glm::vec3 e1t0 = glm::cross(e1, t0);
+ 
+        if (glm::dot(e0t0, n) > 0
+            && glm::dot(e1t0, n) < 0)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
 	bool Triangle::intersect_traingle(const Triangle& tri) const
 	{
 		//return getBoundingBox().intersect_AABB(tri.getBoundingBox());
@@ -494,6 +527,15 @@ namespace GeometryMath {
         Triangle t0(p00, p01, p02);
         Triangle t1(p10, p11, p12);
         return t0.intersect_traingle(t1);
+    }
+
+
+    bool isSharedSingleVertexTriangleIntersect(
+        Vec3 p00, Vec3 p01, Vec3 p02,
+        Vec3 p0, Vec3 p1)
+    {
+        Triangle t0(p00, p01, p02);
+        return t0.intersect_shared_vertex_traingle(p0,p1);
     }
 
     bool edgeTriangleIntersect(Vec3 p00, Vec3 p01,

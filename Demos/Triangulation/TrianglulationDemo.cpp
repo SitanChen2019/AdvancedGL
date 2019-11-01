@@ -412,18 +412,18 @@ bool TrianglulationDemo::init()
 	triangulate("pzea0.5", &input, &output, nullptr);
 	createMeshes(output, m_postMeshes);
 	
-	triangulateio tmp{ 0 };
-	triangulateio tmp1{ 0 };
-	triangulateio tmp2{ 0 };
-	triangulateio tmp3{ 0 };
-	triangulateio refine{ 0 };
-	triangulate("pze", &input, &tmp, nullptr);
-	triangulate("pzea2.0f", &tmp, &tmp1, nullptr);
-	triangulate("pzea2.0f", &tmp1, &tmp2, nullptr);
-	triangulate("pzea1.0f", &tmp2, &tmp3, nullptr);
-	triangulate("pzea0.5f", &tmp3, &refine, nullptr);
+	//triangulateio tmp{ 0 };
+	//triangulateio tmp1{ 0 };
+	//triangulateio tmp2{ 0 };
+	//triangulateio tmp3{ 0 };
+	//triangulateio refine{ 0 };
+	//triangulate("pze", &input, &tmp, nullptr);
+	//triangulate("pzea2.0f", &tmp, &tmp1, nullptr);
+	//triangulate("pzea2.0f", &tmp1, &tmp2, nullptr);
+	//triangulate("pzea1.0f", &tmp2, &tmp3, nullptr);
+	//triangulate("pzea0.5f", &tmp3, &refine, nullptr);
 
-	createMeshes(tmp1, m_refineMesh);
+	//createMeshes(tmp1, m_refineMesh);
 
 	displayPostModel();
 

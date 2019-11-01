@@ -66,7 +66,9 @@ void UntangleDemo::loadModel( std::string modelName )
 
 	std::cout << "Mesh Count: " << tessellationDatas.size() << std::endl;
 	m_meshes.at(0)->setDiffuse(Vec3(0.8, 0, 0));
-	m_meshes.at(1)->setDiffuse(Vec3(0.8, 0.8, 0));
+    
+    if( m_meshes.size() > 1)
+        m_meshes.at(1)->setDiffuse(Vec3(0.8, 0.8, 0));
 	Global::cameraControl().fitBox(m_box);
 
 	m_tessellationDatas.swap(tessellationDatas);

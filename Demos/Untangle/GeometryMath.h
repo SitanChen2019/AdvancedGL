@@ -26,6 +26,8 @@ namespace GeometryMath {
 		bool isPointInTriangle(const Vec3& intersectPt) const;
 
 		bool intersect_traingle(const Triangle& tri) const;
+        bool intersect_shared_vertex_traingle(const Vec3& p0, const Vec3& p1) const;
+
 
 		AABB getBoundingBox() const;
 
@@ -39,6 +41,9 @@ namespace GeometryMath {
 
     bool isTriangleIntersect( Vec3 p00, Vec3 p01, Vec3 p02,
                               Vec3 p10, Vec3 p11, Vec3 p12);
+
+    bool isSharedSingleVertexTriangleIntersect(Vec3 p00, Vec3 p01, Vec3 p02,
+        Vec3 p0, Vec3 p1);
 
     bool edgeTriangleIntersect(Vec3 p00, Vec3 p01,
                                Vec3 p10, Vec3 p11, Vec3 p12,
