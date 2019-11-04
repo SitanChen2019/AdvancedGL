@@ -238,3 +238,81 @@ bool UntangleDemo::destroy()
 	return true;
 }
 
+EventHandleStatus  UntangleDemo::handleMouseInput(int button, int action, int mods)
+{
+   
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (action == GLFW_PRESS) {
+
+            GLFWwindow* window = Global::renderWindow().getGLFWWindow();
+            if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+            {
+                if (pickVertex())
+                    return EventHandled;
+            }
+            else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+            {
+                if (pickTriangle())
+                    return EventHandled;
+            }
+        }
+    }
+    return EventUnHandled;
+}
+
+
+bool UntangleDemo::pickVertex()
+{
+    GLFWwindow* window = Global::renderWindow().getGLFWWindow();
+    const RenderWindow& renderWindow = Global::renderWindow();
+
+    double dX, dY;
+    glfwGetCursorPos(window, &dX, &dY);
+    float x = (float)dX;
+    float y = (float)dY;
+    const float radius = 5; //px
+    Vector<unsigned> pickVertex = Global::mousePicking().pickVertex<Particle>(x, y, radius,
+        (float)renderWindow.getWinWidth(), (float)renderWindow.getWinHeight(),
+        renderWindow.getViewMatrix(), renderWindow.getProjMatrix(),
+        UntangleSolver::singleton().getParticles(), [](const Particle& p) {return p.mCurPosition; }
+    );
+
+    if (pickVertex.empty() == false)
+    {
+        std::cout << "Pick particle " << pickVertex.front() << std::endl;
+        return true;
+    }
+    else
+        return false;
+ 
+}
+
+bool UntangleDemo::pickTriangle()
+{
+    GLFWwindow* window = Global::renderWindow().getGLFWWindow();
+    const RenderWindow& renderWindow = Global::renderWindow();
+
+    double dX, dY;
+    glfwGetCursorPos(window, &dX, &dY);
+    float x = (float)dX;
+    float y = (float)dY;
+    const float radius = 5; //px
+    Vector<unsigned> pickedTriangles = Global::mousePicking().pickTriangle<Particle, Triangle>(x, y, radius,
+        (float)renderWindow.getWinWidth(), (float)renderWindow.getWinHeight(),
+        renderWindow.getViewMatrix(), renderWindow.getProjMatrix(),
+        UntangleSolver::singleton().getParticles(), [](const Vector<Particle>& particles, size_t i) {return particles.at(i).mCurPosition; },
+        UntangleSolver::singleton().getTriangles(), UntangleSolver::singleton().getTriangles().size(),
+        [](const std::vector<Triangle>& triIndices, size_t i) { return std::tuple<int, int, int>(triIndices[i].p0, triIndices[i].p1, triIndices[i].p2); }
+    );
+
+    if (pickedTriangles.empty() == false)
+    {
+        unsigned pickTriangleId = pickedTriangles.front();
+        const Triangle& tri = UntangleSolver::singleton().getTriangles().at(pickTriangleId);
+        std::cout << "Pick particle ID " << pickTriangleId << "(" << tri.p0 << " "<<  tri.p1 << " " << tri.p2 << ")" << std::endl;
+        return true;
+    }
+    else
+        return false;
+
+}

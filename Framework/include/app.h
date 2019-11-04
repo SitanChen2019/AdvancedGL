@@ -19,6 +19,8 @@
 #include "camera_control.h"
 #include "input_listener.h"
 #include "mouse_states.h"
+#include "mouse_picking.h"
+
 
 class Global;
 class IDemo;
@@ -46,6 +48,7 @@ private:
     ShaderMgr m_shaderMgr;
     CameraControl m_cameraControl;
     MouseStatus m_mouseStatus;
+    MousePicking m_mousePicking;
 
     std::list<InputListener*> m_inputHandles;
 

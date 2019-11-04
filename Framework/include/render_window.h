@@ -63,8 +63,8 @@ public:
     void setProjMatrix(const Matrix4& mat) { m_projMatrix = mat;}
     void setViewMatrix(const Matrix4& mat) { m_viewMatrix = mat;}
 
-    unsigned getWinHeight() { return m_winHeight; }
-    unsigned getWinWidth() {return m_winWidth; }
+    unsigned getWinHeight() const { return m_winHeight; } 
+    unsigned getWinWidth()  const {return m_winWidth; }
 private:
     GLFWwindow* m_pGLFWWindow;
     unsigned    m_winWidth;

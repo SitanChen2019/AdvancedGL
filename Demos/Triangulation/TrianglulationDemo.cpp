@@ -104,140 +104,142 @@ int reportnorms )
 	}
 }
 
-void TrianglulationDemo::quicktest()
-{
 
-		struct triangulateio in, mid, out, vorout;
+//void TrianglulationDemo::quicktest()
+//{
+//
+//		struct triangulateio in, mid, out, vorout;
+//
+//		/* Define input points. */
+//
+//		in.numberofpoints = 4;
+//		in.numberofpointattributes = 1;
+//		in.pointlist = (REAL*)malloc(in.numberofpoints * 2 * sizeof(REAL));
+//		in.pointlist[0] = 0.0f;
+//		in.pointlist[1] = 0.0f;
+//		in.pointlist[2] = 1.0f;
+//		in.pointlist[3] = 0.0f;
+//		in.pointlist[4] = 1.0f;
+//		in.pointlist[5] = 10.0f;
+//		in.pointlist[6] = 0.0f;
+//		in.pointlist[7] = 10.0f;
+//		in.pointattributelist = (REAL*)malloc(in.numberofpoints *
+//			in.numberofpointattributes *
+//			sizeof(REAL));
+//		in.pointattributelist[0] = 0.0f;
+//		in.pointattributelist[1] = 1.0f;
+//		in.pointattributelist[2] = 11.0f;
+//		in.pointattributelist[3] = 10.0f;
+//		in.pointmarkerlist = (int*)malloc(in.numberofpoints * sizeof(int));
+//		in.pointmarkerlist[0] = 0.f;
+//		in.pointmarkerlist[1] = 2.f;
+//		in.pointmarkerlist[2] = 0.f;
+//		in.pointmarkerlist[3] = 0.f;
+//
+//		in.numberofsegments = 0.f;
+//		in.numberofholes = 0.f;
+//		in.numberofregions = 1.f;
+//		in.regionlist = (REAL*)malloc(in.numberofregions * 4 * sizeof(REAL));
+//		in.regionlist[0] = 0.5f;
+//		in.regionlist[1] = 5.0f;
+//		in.regionlist[2] = 7.0f;            /* Regional attribute (for whole mesh). */
+//		in.regionlist[3] = 0.1f;          /* Area constraint that will not be used. */
+//
+//		printf("Input point set:\n\n");
+//		report(&in, 1, 0, 0, 0, 0, 0);
+//
+//		/* Make necessary initializations so that Triangle can return a */
+//		/*   triangulation in `mid' and a voronoi diagram in `vorout'.  */
+//
+//		mid.pointlist = (REAL*)NULL;            /* Not needed if -N switch used. */
+//		/* Not needed if -N switch used or number of point attributes is zero: */
+//		mid.pointattributelist = (REAL*)NULL;
+//		mid.pointmarkerlist = (int*)NULL; /* Not needed if -N or -B switch used. */
+//		mid.trianglelist = (int*)NULL;          /* Not needed if -E switch used. */
+//		/* Not needed if -E switch used or number of triangle attributes is zero: */
+//		mid.triangleattributelist = (REAL*)NULL;
+//		mid.neighborlist = (int*)NULL;         /* Needed only if -n switch used. */
+//		/* Needed only if segments are output (-p or -c) and -P not used: */
+//		mid.segmentlist = (int*)NULL;
+//		/* Needed only if segments are output (-p or -c) and -P and -B not used: */
+//		mid.segmentmarkerlist = (int*)NULL;
+//		mid.edgelist = (int*)NULL;             /* Needed only if -e switch used. */
+//		mid.edgemarkerlist = (int*)NULL;   /* Needed if -e used and -B not used. */
+//
+//		vorout.pointlist = (REAL*)NULL;        /* Needed only if -v switch used. */
+//		/* Needed only if -v switch used and number of attributes is not zero: */
+//		vorout.pointattributelist = (REAL*)NULL;
+//		vorout.edgelist = (int*)NULL;          /* Needed only if -v switch used. */
+//		vorout.normlist = (REAL*)NULL;         /* Needed only if -v switch used. */
+//
+//		/* Triangulate the points.  Switches are chosen to read and write a  */
+//		/*   PSLG (p), preserve the convex hull (c), number everything from  */
+//		/*   zero (z), assign a regional attribute to each element (A), and  */
+//		/*   produce an edge list (e), a Voronoi diagram (v), and a triangle */
+//		/*   neighbor list (n).                                              */
+//
+//		triangulate("pczAevn", &in, &mid, &vorout);
+//
+//		printf("Initial triangulation:\n\n");
+//		report(&mid, 1, 1, 1, 1, 1, 0);
+//		printf("Initial Voronoi diagram:\n\n");
+//		report(&vorout, 0, 0, 0, 0, 1, 1);
+//
+//		/* Attach area constraints to the triangles in preparation for */
+//		/*   refining the triangulation.                               */
+//
+//		/* Needed only if -r and -a switches used: */
+//		mid.trianglearealist = (REAL*)malloc(mid.numberoftriangles * sizeof(REAL));
+//		mid.trianglearealist[0] = 3.0;
+//		mid.trianglearealist[1] = 1.0;
+//
+//		/* Make necessary initializations so that Triangle can return a */
+//		/*   triangulation in `out'.                                    */
+//
+//		out.pointlist = (REAL*)NULL;            /* Not needed if -N switch used. */
+//		/* Not needed if -N switch used or number of attributes is zero: */
+//		out.pointattributelist = (REAL*)NULL;
+//		out.trianglelist = (int*)NULL;          /* Not needed if -E switch used. */
+//		/* Not needed if -E switch used or number of triangle attributes is zero: */
+//		out.triangleattributelist = (REAL*)NULL;
+//
+//		/* Refine the triangulation according to the attached */
+//		/*   triangle area constraints.                       */
+//
+//		triangulate("prazBP", &mid, &out, (struct triangulateio*) NULL);
+//
+//		printf("Refined triangulation:\n\n");
+//		report(&out, 0, 1, 0, 0, 0, 0);
+//
+//		/* Free all allocated arrays, including those allocated by Triangle. */
+//
+//		free(in.pointlist);
+//		free(in.pointattributelist);
+//		free(in.pointmarkerlist);
+//		free(in.regionlist);
+//		free(mid.pointlist);
+//		free(mid.pointattributelist);
+//		free(mid.pointmarkerlist);
+//		free(mid.trianglelist);
+//		free(mid.triangleattributelist);
+//		free(mid.trianglearealist);
+//		free(mid.neighborlist);
+//		free(mid.segmentlist);
+//		free(mid.segmentmarkerlist);
+//		free(mid.edgelist);
+//		free(mid.edgemarkerlist);
+//		free(vorout.pointlist);
+//		free(vorout.pointattributelist);
+//		free(vorout.edgelist);
+//		free(vorout.normlist);
+//		free(out.pointlist);
+//		free(out.pointattributelist);
+//		free(out.trianglelist);
+//		free(out.triangleattributelist);
+//
+//		return ;
+//}
 
-		/* Define input points. */
-
-		in.numberofpoints = 4;
-		in.numberofpointattributes = 1;
-		in.pointlist = (REAL*)malloc(in.numberofpoints * 2 * sizeof(REAL));
-		in.pointlist[0] = 0.0;
-		in.pointlist[1] = 0.0;
-		in.pointlist[2] = 1.0;
-		in.pointlist[3] = 0.0;
-		in.pointlist[4] = 1.0;
-		in.pointlist[5] = 10.0;
-		in.pointlist[6] = 0.0;
-		in.pointlist[7] = 10.0;
-		in.pointattributelist = (REAL*)malloc(in.numberofpoints *
-			in.numberofpointattributes *
-			sizeof(REAL));
-		in.pointattributelist[0] = 0.0;
-		in.pointattributelist[1] = 1.0;
-		in.pointattributelist[2] = 11.0;
-		in.pointattributelist[3] = 10.0;
-		in.pointmarkerlist = (int*)malloc(in.numberofpoints * sizeof(int));
-		in.pointmarkerlist[0] = 0;
-		in.pointmarkerlist[1] = 2;
-		in.pointmarkerlist[2] = 0;
-		in.pointmarkerlist[3] = 0;
-
-		in.numberofsegments = 0;
-		in.numberofholes = 0;
-		in.numberofregions = 1;
-		in.regionlist = (REAL*)malloc(in.numberofregions * 4 * sizeof(REAL));
-		in.regionlist[0] = 0.5;
-		in.regionlist[1] = 5.0;
-		in.regionlist[2] = 7.0;            /* Regional attribute (for whole mesh). */
-		in.regionlist[3] = 0.1;          /* Area constraint that will not be used. */
-
-		printf("Input point set:\n\n");
-		report(&in, 1, 0, 0, 0, 0, 0);
-
-		/* Make necessary initializations so that Triangle can return a */
-		/*   triangulation in `mid' and a voronoi diagram in `vorout'.  */
-
-		mid.pointlist = (REAL*)NULL;            /* Not needed if -N switch used. */
-		/* Not needed if -N switch used or number of point attributes is zero: */
-		mid.pointattributelist = (REAL*)NULL;
-		mid.pointmarkerlist = (int*)NULL; /* Not needed if -N or -B switch used. */
-		mid.trianglelist = (int*)NULL;          /* Not needed if -E switch used. */
-		/* Not needed if -E switch used or number of triangle attributes is zero: */
-		mid.triangleattributelist = (REAL*)NULL;
-		mid.neighborlist = (int*)NULL;         /* Needed only if -n switch used. */
-		/* Needed only if segments are output (-p or -c) and -P not used: */
-		mid.segmentlist = (int*)NULL;
-		/* Needed only if segments are output (-p or -c) and -P and -B not used: */
-		mid.segmentmarkerlist = (int*)NULL;
-		mid.edgelist = (int*)NULL;             /* Needed only if -e switch used. */
-		mid.edgemarkerlist = (int*)NULL;   /* Needed if -e used and -B not used. */
-
-		vorout.pointlist = (REAL*)NULL;        /* Needed only if -v switch used. */
-		/* Needed only if -v switch used and number of attributes is not zero: */
-		vorout.pointattributelist = (REAL*)NULL;
-		vorout.edgelist = (int*)NULL;          /* Needed only if -v switch used. */
-		vorout.normlist = (REAL*)NULL;         /* Needed only if -v switch used. */
-
-		/* Triangulate the points.  Switches are chosen to read and write a  */
-		/*   PSLG (p), preserve the convex hull (c), number everything from  */
-		/*   zero (z), assign a regional attribute to each element (A), and  */
-		/*   produce an edge list (e), a Voronoi diagram (v), and a triangle */
-		/*   neighbor list (n).                                              */
-
-		triangulate("pczAevn", &in, &mid, &vorout);
-
-		printf("Initial triangulation:\n\n");
-		report(&mid, 1, 1, 1, 1, 1, 0);
-		printf("Initial Voronoi diagram:\n\n");
-		report(&vorout, 0, 0, 0, 0, 1, 1);
-
-		/* Attach area constraints to the triangles in preparation for */
-		/*   refining the triangulation.                               */
-
-		/* Needed only if -r and -a switches used: */
-		mid.trianglearealist = (REAL*)malloc(mid.numberoftriangles * sizeof(REAL));
-		mid.trianglearealist[0] = 3.0;
-		mid.trianglearealist[1] = 1.0;
-
-		/* Make necessary initializations so that Triangle can return a */
-		/*   triangulation in `out'.                                    */
-
-		out.pointlist = (REAL*)NULL;            /* Not needed if -N switch used. */
-		/* Not needed if -N switch used or number of attributes is zero: */
-		out.pointattributelist = (REAL*)NULL;
-		out.trianglelist = (int*)NULL;          /* Not needed if -E switch used. */
-		/* Not needed if -E switch used or number of triangle attributes is zero: */
-		out.triangleattributelist = (REAL*)NULL;
-
-		/* Refine the triangulation according to the attached */
-		/*   triangle area constraints.                       */
-
-		triangulate("prazBP", &mid, &out, (struct triangulateio*) NULL);
-
-		printf("Refined triangulation:\n\n");
-		report(&out, 0, 1, 0, 0, 0, 0);
-
-		/* Free all allocated arrays, including those allocated by Triangle. */
-
-		free(in.pointlist);
-		free(in.pointattributelist);
-		free(in.pointmarkerlist);
-		free(in.regionlist);
-		free(mid.pointlist);
-		free(mid.pointattributelist);
-		free(mid.pointmarkerlist);
-		free(mid.trianglelist);
-		free(mid.triangleattributelist);
-		free(mid.trianglearealist);
-		free(mid.neighborlist);
-		free(mid.segmentlist);
-		free(mid.segmentmarkerlist);
-		free(mid.edgelist);
-		free(mid.edgemarkerlist);
-		free(vorout.pointlist);
-		free(vorout.pointattributelist);
-		free(vorout.edgelist);
-		free(vorout.normlist);
-		free(out.pointlist);
-		free(out.pointattributelist);
-		free(out.trianglelist);
-		free(out.triangleattributelist);
-
-		return ;
-}
 
 #define PUSH_V(x,y) vertices.push_back(Vec2(x,y));
 
@@ -246,24 +248,24 @@ void TrianglulationDemo::fillInputData1(triangulateio& input_data)
 	input_data = triangulateio{ 0 };
 	Vector<Vec2> vertices;
 
-	vertices.push_back(Vec2((3.59, 3.05)));
-	vertices.push_back(Vec2(7.63,1.25));
-	vertices.push_back(Vec2(13.97,1.57));
-	vertices.push_back(Vec2(15.03, 5.65));
-	vertices.push_back(Vec2(13.41,9.17));
-	vertices.push_back(Vec2(9.55, 9.01));
-	vertices.push_back(Vec2(4.17,7.15));
+	vertices.push_back(Vec2((3.59f, 3.05f)));
+	vertices.push_back(Vec2(7.63f,1.25f));
+	vertices.push_back(Vec2(13.97f,1.57f));
+	vertices.push_back(Vec2(15.03f, 5.65f));
+	vertices.push_back(Vec2(13.41f,9.17f));
+	vertices.push_back(Vec2(9.55f, 9.01f));
+	vertices.push_back(Vec2(4.17f,7.15f));
 
 	Vector<int> segments;
 	segments.reserve(2 * vertices.size());
-	for (size_t i = 0, n = vertices.size(); i < n; ++i)
+	for (int i = 0, n = (int)vertices.size(); i < n; ++i)
 	{
 		segments.push_back(i);
 		segments.push_back(i+1);
 	}
 	segments.back() = 0;
 
-	int vertexOffset = vertices.size();
+	int vertexOffset = (int)vertices.size();
 
 	PUSH_V(7.47, 8.21);
 	vertices.push_back(Vec2(8.13,7.11));
@@ -283,7 +285,7 @@ void TrianglulationDemo::fillInputData1(triangulateio& input_data)
 	memcpy_s(input_data.pointlist, vertices.size() * 2 * sizeof(float), vertices.data(), vertices.size() * sizeof(Vec2));
 
 
-	input_data.numberofsegments = segments.size() / 2;
+	input_data.numberofsegments = (int)segments.size() / 2;
 	input_data.segmentlist = new int[segments.size()];
 	memcpy_s(input_data.segmentlist, sizeof(int) * segments.size(), segments.data(), segments.size() * sizeof(int));
 
@@ -309,7 +311,7 @@ void TrianglulationDemo::createMeshes(const triangulateio& data, std::set< IRend
 		vertex.z = defalut_zValue;
 
 		vertices.push_back(vertex);
-		pointIndices.push_back(i);
+		pointIndices.push_back((unsigned)i);
 	}
 	m_box.merge(vertices);
 	

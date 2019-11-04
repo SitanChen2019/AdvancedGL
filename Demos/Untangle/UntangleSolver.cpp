@@ -409,12 +409,35 @@ bool UntangleSolver::testTriangleIntersect(int triangleID0, int triangleID1 )
     }
     else if(shareVertex == 1)
     {
+        int p0, p1;
+        if (t2.p0 == sharedVertexID)
+        {
+            p0 = t2.p1;
+            p1 = t2.p2;
+        }
+        else if (t2.p1 == sharedVertexID)
+        {
+            p0 = t2.p0;
+            p1 = t2.p2;
+        }
+        else
+        {
+            assert(t2.p2 == sharedVertexID);
+            p0 = t2.p0;
+            p1 = t2.p1;
+        }
         return GeometryMath::isSharedSingleVertexTriangleIntersect(
             m_particles[t1.p0].mCurPosition, m_particles[t1.p1].mCurPosition, m_particles[t1.p2].mCurPosition,
-            m_particles[t2.p0 == sharedVertexID ? t2.p1:t2.p0].mCurPosition, 
-            m_particles[t2.p1 == sharedVertexID ? t2.p2:t2.p1].mCurPosition);
+            m_particles[p0].mCurPosition, 
+            m_particles[p1].mCurPosition);
 
     }
+    else
+    {
+        assert(shareVertex == 2);
+        return false;
+    }
+
 
 }
 
@@ -472,11 +495,7 @@ void UntangleSolver::findContour(int edgeTraignleID, int triangleID, Edge curren
 {
 	auto it = m_collisionTrianglePair.find({ edgeTraignleID, triangleID });
 
-	if (it == m_collisionTrianglePair.end())
-	{
-		std::cout << "A loop vertex is found" << std::endl;
-		return;
-	}
+    assert(it != m_collisionTrianglePair.end());
 
 	assert(it->mHitPos.size() == 2);
 
@@ -496,7 +515,7 @@ void UntangleSolver::findContour(int edgeTraignleID, int triangleID, Edge curren
 
 	int theOtherHitIdx = 1 - currentHitIdx;
 
-	if (it->mHitPos[theOtherHitIdx].mTriangleID == edgeTraignleID )
+ 	if (it->mHitPos[theOtherHitIdx].mTriangleID == edgeTraignleID )
 	{
 		//two hit points on the same triangle
 		Edge adjacentTriangleEdge;

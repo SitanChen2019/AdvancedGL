@@ -40,6 +40,11 @@ public:
         return s_app.m_mouseStatus;
     }
     
+
+    static MousePicking& mousePicking() {
+        return s_app.m_mousePicking;
+    }
+
     static const std::string SystemResPath( std::string subPath )
     {
 #ifdef _MSC_BUILD

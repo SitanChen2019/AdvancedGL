@@ -4,6 +4,7 @@
 
 #include "app.h"
 #include "global.h"
+#include "idemo.h"
 
 GLFWwindow* App::createWindow()
 {
@@ -50,6 +51,12 @@ void App::run( IDemo* pDemo )
     DemoRunner runner;
 
     runner.loadDemo( pDemo );
+    InputListener* pInputListener = dynamic_cast<InputListener*>(pDemo);
+    if (pInputListener)
+    {
+        m_inputHandles.push_back(pInputListener);
+    }
+
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(m_pWindow))
     {

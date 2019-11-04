@@ -21,7 +21,7 @@ public:
 	void displayRefineModel() override;
 
 
-	void quicktest();
+	//void quicktest();
 
 	void createMeshes(const triangulateio& data, std::set< IRenderable*>& meshGroup);
 	void removeMeshGroup(std::set<IRenderable*>& meshGroup);

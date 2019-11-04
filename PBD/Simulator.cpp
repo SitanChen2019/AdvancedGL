@@ -3,4 +3,13 @@
 namespace PBD
 {
     
+    Simualtor::Simualtor()
+    {
+
+    }
+
+    void Simualtor::update()
+    {
+
+    }
 }

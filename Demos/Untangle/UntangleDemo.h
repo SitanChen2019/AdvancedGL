@@ -3,11 +3,13 @@
 
 #include "idemo.h"
 #include "aabb.h"
+#include "input_listener.h"
 #include "UntangleDemoView.h"
 
 class TriMeshRenderable;
 
 class UntangleDemo : public IDemo
+                    ,public  InputListener
                     ,public IUntangleDemoModel
 {
 public:
@@ -23,6 +25,8 @@ public:
 	 bool isGlobalScheme() override;
 	 void setGlobalScheme(bool bValue) override;
 
+     EventHandleStatus handleMouseInput(int button, int action, int mods) override;
+
 private:
 	void optimizeMesh( MeshData& );
 	void loadModel(std::string modelFullPath );
@@ -30,6 +34,9 @@ private:
 	 int getMeshCount() override;
 	 void setMeshInvMass(int meshID, float value) override;
 	 float getMeshInvMass(int meshID) override;
+
+     bool pickVertex();
+     bool pickTriangle();
 
 private:
 	AABB m_box;
