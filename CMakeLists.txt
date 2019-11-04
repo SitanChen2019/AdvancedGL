@@ -22,6 +22,8 @@ set(THIRD_PARTY_ROOT ${CMAKE_SOURCE_DIR}/thirdparty)
 
 add_subdirectory(./thirdparty/glfw-3.3)
 add_subdirectory(./thirdparty/assimp)
+add_subdirectory(./PBD)
+
 file(GLOB IMGUI_SRC  ${THIRD_PARTY_ROOT}/imgui/src/*.cpp)
 set(THIRD_PARTY_SOURCE
         ${THIRD_PARTY_ROOT}/glad/src/glad.c
@@ -60,7 +62,7 @@ target_include_directories(DEMO PRIVATE
 
 
 target_compile_definitions( DEMO PRIVATE -DIMGUI_IMPL_OPENGL_LOADER_GLAD)
-target_link_libraries(DEMO PRIVATE glfw)
-target_link_libraries(DEMO PRIVATE assimp)
+target_link_libraries(DEMO PRIVATE glfw assimp PBDSim)
+
 
 
