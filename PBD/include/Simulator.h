@@ -2,6 +2,7 @@
 #define PBD_SIMULATOR_H
 
 #include "exporter.h"
+#include "Particle.h"
 
 namespace PBD
 {
@@ -12,6 +13,12 @@ namespace PBD
         Simualtor();
 
         void update();
+        
+        
+    private:
+        glm::vec3 getExtForce();
+    private:
+        std::vector<Particle> mParticles;
     };
 }
 #endif
