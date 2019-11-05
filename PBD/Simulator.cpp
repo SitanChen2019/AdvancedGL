@@ -14,60 +14,39 @@ namespace PBD
 
     }
 
-    void Simualtor::init(std::vector<Particle>* pClientParticles,
-        std::vector<Triangle>* pTriangles
+    void Simualtor::init(std::vector<Particle>&& particles,
+        std::vector<Triangle>&& triangles
     )
     {
-        mpClientParticles = pClientParticles;
-        mpTriangles = pTriangles;
-
-        mParticles.reserve(mpClientParticles->size());
-        for (unsigned i = 0, n = (unsigned)mParticles.size(); i < n; ++i)
-        {
-            Particle& p = mParticles[i];
-            p = (*mpClientParticles)[i];
-        }
+        mParticles.swap(particles);
+            mTriangles.swap( triangles);
     }
 
     void Simualtor::deinit()
     {
-        mpClientParticles = nullptr;;
-        mpTriangles = nullptr;
 
+        mTriangles.clear();
         mParticles.clear();
     }
 
     void Simualtor::preUpdate()
     {
-        if (mpClientParticles == nullptr)
-            return;
-
-        //copy from client
-        for (unsigned i = 0, n = (unsigned)mParticles.size(); i < n; ++i)
-        {
-            Particle& p = mParticles[i];
-            p = (*mpClientParticles)[i];
-        }
-
         //save pre-posotion
         for (unsigned i = 0, n = (unsigned)mParticles.size(); i < n; ++i)
         {
-            ParticleExt& p = mParticles[i];
+            Particle& p = mParticles[i];
             p.mPrePos = p.mCurPos;
         }
     }
 
     void Simualtor::update()
     {
-        if (mpClientParticles == nullptr)
-            return;
-
         float t = mSetting.DELTA_T;
 
         //update velocity by extental force
         for(unsigned i= 0, n = (unsigned)mParticles.size(); i < n; ++i )
         {
-            ParticleExt& p = mParticles[i];
+            Particle& p = mParticles[i];
             p.mVelocity += t * p.mInvMass* getExtForce(p);
             p.mCurPos += p.mVelocity * t;
         }
@@ -75,7 +54,7 @@ namespace PBD
         //predicate the current position with velocity
         for (unsigned i = 0, n = (unsigned)mParticles.size(); i < n; ++i)
         {
-            ParticleExt& p = mParticles[i];
+            Particle& p = mParticles[i];
             p.mCurPos += p.mVelocity * t;
         }
 
@@ -88,7 +67,7 @@ namespace PBD
         //update velocity
         for (unsigned i = 0, n = (unsigned)mParticles.size(); i < n; ++i)
         {
-            ParticleExt& p = mParticles[i];
+            Particle& p = mParticles[i];
             p.mVelocity = (p.mCurPos - p.mPrePos) / t;
         }
         
@@ -97,19 +76,11 @@ namespace PBD
 
     void Simualtor::postUpdate()
     {
-        if (mpClientParticles == nullptr)
-            return;
 
-        //copy back to client
-        for (unsigned i = 0, n = (unsigned)mParticles.size(); i < n; ++i)
-        {
-            ParticleExt& p = mParticles[i];
-            (*mpClientParticles)[i] = (Particle)(p);
-        }
     }
 
     
-    glm::vec3 Simualtor::getExtForce(const ParticleExt& particle)
+    glm::vec3 Simualtor::getExtForce(const Particle& particle)
     {
         return  mSetting.GRAVITY;
     }

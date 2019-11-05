@@ -28,6 +28,7 @@ public:
      EventHandleStatus handleMouseInput(int button, int action, int mods) override;
 
 private:
+    void initSimulationSolver(const Vector<MeshData>& tessellationDatas);
     void initUntangleSolver(const Vector<MeshData>& tessellationDatas);
 
 	void optimizeMesh( MeshData& );

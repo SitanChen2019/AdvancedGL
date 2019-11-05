@@ -84,7 +84,7 @@ public:
 
                 if (z_value >= -1 && z_value <= 1 )
                 {
-                    retList.push_back(i);
+                    retList.push_back((int)i);
                     if (z_value < min_zvalue)
                     {
                         min_zvalue = z_value;

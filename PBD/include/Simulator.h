@@ -19,22 +19,30 @@ namespace PBD
         void update();
         void postUpdate();
         
-        void init(std::vector<Particle>* pClientParticles,
-            std::vector<Triangle>* pTriangles
+        void init(std::vector<Particle>&& particles,
+            std::vector<Triangle>&& triangles
             );
         void deinit();
 
+        std::vector<Particle>& getParticles()
+        {
+            return mParticles;
+        }
+
+        const std::vector<Triangle>& getTriangles() const
+        {
+            return mTriangles;
+        }
+
     private:
         Simualtor();
-        _worker glm::vec3  getExtForce( const ParticleExt& );
+        _worker glm::vec3  getExtForce( const Particle& );
 
     private:
         SimSettings mSetting;
 
-        std::vector<Particle>* mpClientParticles = nullptr;;
-        std::vector<Triangle>* mpTriangles = nullptr;
-
-        std::vector<ParticleExt> mParticles;
+        std::vector<Particle> mParticles;
+        std::vector<Triangle> mTriangles;  
     };
 }
 #endif

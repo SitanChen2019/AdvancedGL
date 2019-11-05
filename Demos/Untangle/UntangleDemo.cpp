@@ -16,8 +16,12 @@ void UntangleDemo::loadModel( std::string modelName )
 	for (int i = 0; i < tessellationDatas.size(); ++i)
 		optimizeMesh(tessellationDatas[i]);
 
+    m_meshInvMass.clear();
+    m_meshInvMass.resize(tessellationDatas.size(), 0.1f);
 	//init solover
+    initSimulationSolver(tessellationDatas);
     initUntangleSolver(tessellationDatas);
+    
 
 	m_box = AABB();
 	for (auto& meshdata : tessellationDatas)
@@ -43,6 +47,41 @@ void UntangleDemo::loadModel( std::string modelName )
 }
 
 
+void UntangleDemo::initSimulationSolver(const Vector<MeshData>& tessellationDatas)
+{
+    Vector<PBD::Particle> particles;
+    Vector<PBD::Triangle> triangles;
+    int vertex_offset = 0;
+    int pid = 0;
+    int tid = 0;
+    int meshID = 0;
+
+    for (auto& meshdata : tessellationDatas)
+    {
+        for (auto& pos : meshdata.vertices)
+        {
+            PBD::Particle p;
+            p.mCurPos = pos;
+            p.mPrePos = pos;
+            p.mInvMass = m_meshInvMass[meshID];
+            particles.push_back(p);
+        }
+
+        for (size_t i = 0; i < meshdata.indices.size(); i += 3)
+        {
+            PBD::Triangle t;
+            t.p0 = meshdata.indices[i] + vertex_offset;
+            t.p1 = meshdata.indices[i + 1] + vertex_offset;
+            t.p2 = meshdata.indices[i + 2] + vertex_offset;
+            triangles.push_back(t);
+        }
+
+        vertex_offset += (int)meshdata.vertices.size();
+        ++meshID;
+    }
+
+    PBD::Simualtor::singleton().init(std::move(particles), std::move(triangles));
+}
 
 void UntangleDemo::initUntangleSolver(const Vector<MeshData>& tessellationDatas)
 {
@@ -52,8 +91,7 @@ void UntangleDemo::initUntangleSolver(const Vector<MeshData>& tessellationDatas)
     int pid = 0;
     int tid = 0;
     int meshID = 0;
-    m_meshInvMass.clear();
-    m_meshInvMass.resize(tessellationDatas.size(), 0.1f);
+
     for (auto& meshdata : tessellationDatas)
     {
         for (auto& pos : meshdata.vertices)
@@ -206,6 +244,21 @@ void UntangleDemo::optimizeMesh(MeshData& meshData)
 
 void UntangleDemo::exeOneStep()
 {
+    std::vector<PBD::Particle>&  vecSimParticle = PBD::Simualtor::singleton().getParticles();
+    std::vector<Particle>& vecUntangleParticle = UntangleSolver::singleton().getParticles();
+    for (size_t i = 0, n = vecSimParticle.size(); i < n; ++i)
+    {
+        vecSimParticle[i].mCurPos = vecUntangleParticle[i].mCurPosition;
+    }
+    PBD::Simualtor::singleton().preUpdate();
+    //PBD::Simualtor::singleton().update();
+    PBD::Simualtor::singleton().postUpdate();
+
+
+    for (size_t i = 0, n = vecSimParticle.size(); i < n; ++i)
+    {
+        vecUntangleParticle[i].mCurPosition = vecSimParticle[i].mCurPos;
+    }
     UntangleSolver::singleton().preUpdate();
     UntangleSolver::singleton().update();
     UntangleSolver::singleton().postUpdate();

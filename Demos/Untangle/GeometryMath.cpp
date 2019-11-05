@@ -247,7 +247,7 @@ namespace GeometryMath {
 				stage2_key = (stage2_key << 1) + ( glm::dot(vect, n) > 0 ? 1 : 0 );
 			}
 
-			int  result_matrix[16] = {
+			const int  result_matrix[16] = {
 				-1,-1,1,2,
 				-1,-1,4,-1,
 				1,4,3,1,
@@ -323,11 +323,11 @@ namespace GeometryMath {
 			else if (stage2_case == 3)
 			{
 				//test if t0 or t1 is in the triangle
-				if (glm::dot(glm::cross(t0 - e0, t0 - e1), n) >= 0)
+				if (glm::dot(glm::cross(e1 - e0, t0 - e0), n) >= 0)
 				{
 					return true;
 				}
-				else if (glm::dot(glm::cross(t1 - e0, t1 - e1), n) >= 0)
+				else if (glm::dot(glm::cross(e1 - e0, t1 - e0), n) >= 0)
 				{
 					return true;
 				}
@@ -409,6 +409,14 @@ namespace GeometryMath {
 		glm::vec3 t0, t1;
 		if (near_zero_num != 0)
 		{
+            //auto normal_n = glm::normalize(n);
+            //auto projectOnPlane = [normal_n](glm::vec3 p)
+            //{
+            //    if (std::isnan(normal_n.x))
+            //        return p;
+            //    return p - glm::dot(p, normal_n) * normal_n;
+            //};
+
 			if (near_zero_num == 7)
 			{
 				//test if two coplanar triangle intersections
@@ -436,28 +444,28 @@ namespace GeometryMath {
 			{
 				//one is on the plane, the other two d should be different sign
 
-				if (near_zero_num == 4)
+				if (near_zero_num == 4) //D0 is zero
 				{
-					if ( (sign_key != 1) | (sign_key != 2) )
+					if ( (sign_key != 1) && (sign_key != 2) )
 						return false;
 					
 					float beta12 = D2 / (D2 - D1);
 					t0 = beta12 * r1 + (1 - beta12) * r2;
-					t1 = r1;
+					t1 = r0;
 
 				}
-				else if (near_zero_num == 2)
+				else if (near_zero_num == 2) //D1 is zero
 				{
-					if ((sign_key != 4) | (sign_key != 1))
+					if ((sign_key != 4) && (sign_key != 1))
 						return false;
 	
 					float beta02 = D2 / (D2 - D0);
 					t0 = beta02 * r0 + (1 - beta02) * r2;
 					t1 = r1;
 				}
-				else if (near_zero_num == 1)
+				else if (near_zero_num == 1) //D2 is zero
 				{
-					if ((sign_key != 4) | (sign_key != 2))
+					if ((sign_key != 4) && (sign_key != 2))
 						return false;
 
 					float beta01 = D1 / (D1 - D0);
@@ -534,7 +542,8 @@ namespace GeometryMath {
         Vec3 p00, Vec3 p01, Vec3 p02,
         Vec3 p0, Vec3 p1)
     {
-        Triangle t0(p00, p01, p02);
+        //p00 is the shared vertex
+        Triangle t0(p01, p02, p00);
         return t0.intersect_shared_vertex_traingle(p0,p1);
     }
 

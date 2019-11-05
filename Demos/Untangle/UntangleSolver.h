@@ -11,8 +11,8 @@
 #include <vector>
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
-
-
+#include <unordered_map>
+#include <boost/container_hash/hash.hpp>
 
 struct Particle
 {
@@ -44,6 +44,7 @@ struct  Edge
 	}
 
     Edge( int triangleID , int edgeLocalID );
+    Edge(int triangleID, int p0, int p1);
 
     int mP0;
     int mP1;
@@ -74,36 +75,104 @@ struct  Edge
 	}
 };
 
+enum TriangleHitPointType
+{
+    EDGE_POINT,
+    SHARED_VERTEX,
+};
+
 struct TriangleHitPoint
 {
-	int mTriangleID;
-	int mEdgeLocalID;
-	float m_t;
-	Vec3 mHitCoordinate;
+    const TriangleHitPointType mType;
 
-	TriangleHitPoint( Edge edge , float t)
-		:mHitCoordinate(Vec3(0))
+    union
+    {
+        struct {
+            int mTriangleID;
+            int mEdgeLocalID;
+            int mHitTriangleID;
+            float m_t;
+        };
+
+        struct {
+            int mVertexID;
+            int mTriangleID0;
+            int mTriangleID1;
+        };
+    };
+    size_t mHashCode;
+
+    TriangleHitPoint( int vertexID, int triangleID0, int triangleID1)
+        :mType( SHARED_VERTEX )
+    {
+        mVertexID = vertexID;
+        mTriangleID0 = triangleID0 > triangleID1 ? triangleID1 : triangleID0;
+        mTriangleID1 = triangleID0 > triangleID1 ? triangleID0 : triangleID1;
+
+        mHashCode = mType;
+        boost::hash_combine(mHashCode, mVertexID);
+        boost::hash_combine(mHashCode, mTriangleID0);
+        boost::hash_combine(mHashCode, mTriangleID1);
+    }
+
+	TriangleHitPoint( Edge edge , float t , int hitTriangleID)
+		:mType(EDGE_POINT)
 		,mEdgeLocalID(edge.mEdgeLocalID )
 		,m_t(t)
 	{
 		mTriangleID = edge.mTriangleID;
-		if (edge.mEdgeLocalID == 0)
-		{
-			mHitCoordinate = Vec3(t, 1 - t, 0);
-		}
-		else if (edge.mEdgeLocalID == 1)
-		{
-			mHitCoordinate = Vec3(0, t, 1 - t);
-		}
-		else if (edge.mEdgeLocalID == 2)
-		{
-			mHitCoordinate = Vec3(1 - t, 0, t);
-		}
-		else
-		{
-			assert(false);
-		}
+        mHitTriangleID = hitTriangleID;
+
+        mHashCode = mType;
+        boost::hash_combine(mHashCode, mTriangleID);
+        boost::hash_combine(mHashCode, mEdgeLocalID);
+        boost::hash_combine(mHashCode, mHitTriangleID);
+        boost::hash_combine(mHashCode, m_t);
 	}
+
+    std::pair<int, int> getTwoTriangles() const
+    {
+        if (SHARED_VERTEX == mType)
+        {
+            return std::make_pair(mTriangleID0, mTriangleID1);
+        }
+        else if (EDGE_POINT == mType)
+        {
+            return std::make_pair(mTriangleID, mHitTriangleID);
+        }
+        else
+        {
+            assert(false);
+            return std::make_pair(-1, -1);
+        }
+    }
+
+
+    bool operator==(const TriangleHitPoint another) const
+    {
+        if (mType != another.mType)
+            return false;
+
+        if (mType == SHARED_VERTEX)
+        {
+            return mVertexID == another.mVertexID
+                && mTriangleID0 == another.mTriangleID0
+                && mTriangleID1 == another.mTriangleID1;
+
+        }
+        else
+        {
+            return m_t == another.m_t 
+                && mTriangleID == another.mTriangleID
+                && mEdgeLocalID == another.mEdgeLocalID 
+                && mHitTriangleID == another.mHitTriangleID;
+        }
+    }
+
+    size_t hash() const
+    {
+        return mHashCode;
+    }
 };
 
 
@@ -134,7 +203,7 @@ struct VertexPair
 
 struct TrianglePair
 {
-    TrianglePair( int triID0, int triID1 )
+    TrianglePair( int triID0, int triID1)
     {
         assert( triID0 != triID1 );
         mTriangleID0 = triID0 > triID1 ? triID1 : triID0;
@@ -144,6 +213,7 @@ struct TrianglePair
     int mTriangleID0;
     int mTriangleID1;
 	std::vector<TriangleHitPoint> mHitPos;
+
 
     bool operator<( const TrianglePair& other) const
     {
@@ -156,41 +226,16 @@ struct TrianglePair
         }
     }
 
-	void addHitPos(Edge edge , float t)
+	void addHitPos(const TriangleHitPoint& hitPos )
 	{
-        TriangleHitPoint tmp(edge,t);
-        if (t == 0 || t == 1)
-        {
-            for (auto& data : mHitPos)
-            {
-                if (data.mHitCoordinate == tmp.mHitCoordinate)
-                    return;
-            }
-        }
-		mHitPos.emplace_back(edge, t);
+		mHitPos.emplace_back(hitPos);
 	}
-};
 
-struct EdgeTrianglePair
-{
-    EdgeTrianglePair(const Edge& edge , int triangleID, float hit_t);
-    Edge mEdge;
-    int  mTriangleID;
 
-    float mHit_t;
-
-    bool operator<( const EdgeTrianglePair& other) const
-    {
-        if( mTriangleID < other.mTriangleID )
-            return true;
-        else if( other.mTriangleID < mTriangleID )
-            return false;
-        else{
-            return mEdge < other.mEdge;
-        }
-    }
 
 };
+
+
 
 struct EdgeCorrect
 {
@@ -216,6 +261,13 @@ public:
     {
         return mOffset;
     }
+};
+
+enum TriangleIntersectType
+{
+    NO_INTERSECTION,
+    NO_SHARE_INTERSECTION,
+    SINGLE_SHARE_INTERSECTION,
 };
 
 class UntangleSolver {
@@ -262,22 +314,30 @@ private:
     //temp data
     void findCollisionTrianglePairs();
     void calculateEdgeTriangleIntersection();
-	void groupEdgeToContour();
+	void groupHitPositionToContour();
     void calculateEdgeCorrectVector();
     void correctParticles();
 
     Vec3 getTriangleNormal(int triangleID);
-    bool testTriangleIntersect(int triangleID0, int triangleID1 );
+    TriangleIntersectType testTriangleIntersect(int triangleID0, int triangleID1 );
     bool testEdgeTriangleIntersect(const Edge& edge, int Triangle, float& hit_t );
     Vec3 calculateGVector(const Edge& edge, int Triangle);
     void addEdgeCorrectVector( const Edge& edge , const Vec3 correctVector);
 	void addContourCorrectVector(int contourID, const Edge& edge, const Vec3 correctVector);
 
 	bool testTwoTriangleEdgeCollision( TrianglePair& triPair);
-	Edge findAdjacentTriangleEdge(const Edge& edge);
+	std::list<Edge> findAdjacentTriangleEdges(const Edge& edge);
+    std::vector<int> findVertexAdjacentTriangle(int vertexID);
 
 	void findContour(int edgeTraignleID, int triangleID, Edge currentEdge, int contourId);
 
+    void findContour2(int src_triangleID, int hit_triangleID, int target_triangleID, const TriangleHitPoint& src_hitPos, int graphID);
+
+    int getShareVertexCount(int triangleID0, int triangleID1) const;
+    std::array<int, 3> rerangeTriangleVertexListByShare(int triangleID0, int triangleID1 ) const;
+
+    TriangleHitPoint findPairHitPos(const TriangleHitPoint& hitPos);
+    bool isHitPosMatch(const TriangleHitPoint& hitPos1, const TriangleHitPoint& hitPos2);
 private:
 	bool m_isGlobalScheme = true;
 
@@ -287,12 +347,12 @@ private:
 	std::map<VertexPair, std::array<Edge, 2>> m_shareEdgeMap;
 
     std::set<TrianglePair> m_collisionTrianglePair;
-    std::set<EdgeTrianglePair> m_collisionEdgeTrianglePair;
 
+    std::unordered_map<size_t, TriangleHitPoint> m_TriangleHitPositions;
 
     std::map<Edge,EdgeCorrect> m_edgeCorrects;
 
-	std::map<EdgeTrianglePair, int> m_edgeToContour;
+	std::map<size_t, int> m_hitPosToGraph;
 	std::map<int, EdgeCorrect> m_contourCorrect;
 	std::map<int, std::set<int>> m_contourToVertexMap;
 

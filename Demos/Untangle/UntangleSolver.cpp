@@ -85,9 +85,9 @@ void UntangleSolver::init( std::vector<Particle>&& particles, std::vector<Triang
 	}
 }
 
-Edge UntangleSolver::findAdjacentTriangleEdge( const Edge& edge)
+std::list<Edge> UntangleSolver::findAdjacentTriangleEdges( const Edge& edge)
 {
-	Edge ret;
+	std::list<Edge> ret;
 	auto it = m_shareEdgeMap.find({ edge.mP0, edge.mP1 });
 	
 	if (it == m_shareEdgeMap.end())
@@ -99,10 +99,26 @@ Edge UntangleSolver::findAdjacentTriangleEdge( const Edge& edge)
 			return ret;
 
 		if (edgeItem.mTriangleID != edge.mTriangleID)
-			return edgeItem;
+            ret.push_back(edgeItem);
 	}
 
 	return ret;
+}
+
+std::vector<int> UntangleSolver::findVertexAdjacentTriangle(int vertexID)
+{
+    std::vector<int> tris;
+    tris.reserve(8);
+
+
+    for (int i = 0, n = (int)m_triangles.size(); i <n; ++i)
+    {
+        const auto& tri = m_triangles.at(i);
+        if (tri.p0 == vertexID || tri.p1 == vertexID || tri.p2 == vertexID)
+            tris.push_back(i);
+    }
+
+    return tris;
 }
 
 void UntangleSolver::preUpdate() {
@@ -125,11 +141,11 @@ void UntangleSolver::update()
 			std::cout << "Warning Triangle Test True, Edge Test False: " << it.mTriangleID0 << " " << it.mTriangleID1 << std::endl;
 		} 
 	}
-	groupEdgeToContour();
+	groupHitPositionToContour();
 
-    calculateEdgeCorrectVector();
+    //calculateEdgeCorrectVector();
 
-    correctParticles();
+    //correctParticles();
 }
 
 void UntangleSolver::postUpdate() {
@@ -144,7 +160,8 @@ void UntangleSolver::findCollisionTrianglePairs()
     {
         for( int j = i+1; j < triangleCount ; ++j )
         {
-            if( testTriangleIntersect(i,j) )
+            auto intersect_type = testTriangleIntersect(i, j);
+            if(intersect_type != NO_INTERSECTION )
             {
                 m_collisionTrianglePair.insert(TrianglePair(i,j));
             }
@@ -152,92 +169,270 @@ void UntangleSolver::findCollisionTrianglePairs()
     }
 }
   
-bool UntangleSolver::testTwoTriangleEdgeCollision(TrianglePair& tir_pair)
+int UntangleSolver::getShareVertexCount(int triangleID0, int triangleID1) const
 {
-	bool ret = false;
-	for (int i = 0; i < 3; ++i)
-	{
-		Edge edge(tir_pair.mTriangleID0, i);
-		float hit_t = -1;
-		if (testEdgeTriangleIntersect(edge, tir_pair.mTriangleID1, hit_t))
-		{
-			tir_pair.addHitPos(edge, hit_t);
-			m_collisionEdgeTrianglePair.insert(EdgeTrianglePair(edge, tir_pair.mTriangleID1, hit_t));
-			ret = true;
-		}
-	}
+    assert(triangleID0 != triangleID1);
+    const Triangle& t1 = m_triangles[triangleID0];
+    const Triangle& t2 = m_triangles[triangleID1];
 
-	for (int i = 0; i < 3; ++i)
-	{
-		Edge edge(tir_pair.mTriangleID1, i);
-		float hit_t = -1;
-		if (testEdgeTriangleIntersect(edge, tir_pair.mTriangleID0, hit_t))
-		{
-			tir_pair.addHitPos(edge, hit_t);
-			m_collisionEdgeTrianglePair.insert(EdgeTrianglePair(edge, tir_pair.mTriangleID0, hit_t));
-			ret = true;
-		}
-	}
+    int shareVertex = 0;
+    if (t1.p0 == t2.p0 || t1.p0 == t2.p1 || t1.p0 == t2.p2)
+    {
+        ++shareVertex;
+    }
+    if (t1.p1 == t2.p0 || t1.p1 == t2.p1 || t1.p1 == t2.p2)
+    {
+        ++shareVertex;
+    }
+    if (t1.p2 == t2.p0 || t1.p2 == t2.p1 || t1.p2 == t2.p2)
+    {
+        ++shareVertex;
+    }
 
-	return ret;
+    return shareVertex;
+}
+
+
+std::array<int, 3> UntangleSolver::rerangeTriangleVertexListByShare(int triangleID0, int triangleID1) const
+{
+    assert(triangleID0 != triangleID1);
+    const Triangle& t1 = m_triangles[triangleID0];
+    const Triangle& t2 = m_triangles[triangleID1];
+
+    bool p0Shared = false;
+    bool p1Shared = false;
+    bool p2Shared = false;
+
+    std::array<int, 3> ret;
+    int currentIdx = 0;
+
+    if (t1.p0 == t2.p0 || t1.p0 == t2.p1 || t1.p0 == t2.p2)
+    {
+        ret[currentIdx++] = t1.p0;
+        p0Shared = true;
+    }
+    if (t1.p1 == t2.p0 || t1.p1 == t2.p1 || t1.p1 == t2.p2)
+    {
+        ret[currentIdx++] = t1.p1;
+        p1Shared = true;
+    }
+    if (t1.p2 == t2.p0 || t1.p2 == t2.p1 || t1.p2 == t2.p2)
+    {
+        ret[currentIdx++] = t1.p2;
+        p2Shared = true;
+    }
+
+    if (p0Shared == false)
+    {
+        ret[currentIdx++] = t1.p0;
+    }
+    if (p1Shared == false)
+    {
+        ret[currentIdx++] = t1.p1;
+    }
+    if (p2Shared == false)
+    {
+        ret[currentIdx++] = t1.p2;
+    }
+
+    assert(currentIdx == 3);
+    return ret;
+}
+
+bool UntangleSolver::testTwoTriangleEdgeCollision(TrianglePair& tri_pair)
+{
+    int sharedVertexCount = getShareVertexCount(tri_pair.mTriangleID0, tri_pair.mTriangleID1);
+    bool ret = false;
+
+    if (sharedVertexCount == 0)
+    {
+        for (int i = 0; i < 3; ++i)
+        {
+            Edge edge(tri_pair.mTriangleID0, i);
+            float hit_t = -1;
+            if (testEdgeTriangleIntersect(edge, tri_pair.mTriangleID1, hit_t))
+            {
+                TriangleHitPoint hitPos(edge, hit_t, tri_pair.mTriangleID1);
+                m_TriangleHitPositions.emplace(hitPos.hash(), hitPos);
+                tri_pair.addHitPos(hitPos);
+                ret = true;
+            }
+        }
+
+        for (int i = 0; i < 3; ++i)
+        {
+            Edge edge(tri_pair.mTriangleID1, i);
+            float hit_t = -1;
+            if (testEdgeTriangleIntersect(edge, tri_pair.mTriangleID0, hit_t))
+            {
+                TriangleHitPoint hitPos(edge, hit_t, tri_pair.mTriangleID0);
+                m_TriangleHitPositions.emplace(hitPos.hash(), hitPos);
+                tri_pair.addHitPos(hitPos);
+                ret = true;
+            }
+        }
+    }
+    else if (sharedVertexCount == 1)
+    {
+        std::array<int, 3> rerangeVertexList = rerangeTriangleVertexListByShare(tri_pair.mTriangleID0, tri_pair.mTriangleID1);
+        Edge edge(tri_pair.mTriangleID0, rerangeVertexList[1], rerangeVertexList[2]);
+        float hit_t = -1;
+        if (testEdgeTriangleIntersect(edge, tri_pair.mTriangleID1, hit_t))
+        {
+            TriangleHitPoint hitPos(edge, hit_t, tri_pair.mTriangleID1);
+            m_TriangleHitPositions.emplace(hitPos.hash(), hitPos);
+            tri_pair.addHitPos(hitPos);
+
+            ret = true;
+        }
+
+        if (ret == false)
+        {
+            rerangeVertexList = rerangeTriangleVertexListByShare(tri_pair.mTriangleID1, tri_pair.mTriangleID0);
+            edge = Edge(tri_pair.mTriangleID1, rerangeVertexList[1], rerangeVertexList[2]);
+            hit_t = -1;
+            if (testEdgeTriangleIntersect(edge, tri_pair.mTriangleID0, hit_t))
+            {
+                TriangleHitPoint hitPos(edge, hit_t, tri_pair.mTriangleID0);
+                m_TriangleHitPositions.emplace(hitPos.hash(), hitPos);
+                tri_pair.addHitPos(hitPos);
+                ret = true;
+            }
+        }
+
+        if (ret)
+        {
+            TriangleHitPoint hitPos(rerangeVertexList[0], tri_pair.mTriangleID0, tri_pair.mTriangleID1);
+            m_TriangleHitPositions.emplace(hitPos.hash(), hitPos);
+            tri_pair.addHitPos(hitPos);
+        }
+    }
+    else
+    {
+        assert(false);
+    }
+
+    return ret;
 }
 
 void UntangleSolver::calculateEdgeTriangleIntersection()
 {
-    m_collisionEdgeTrianglePair.clear();
+    m_TriangleHitPositions.clear();
     for( auto it = m_collisionTrianglePair.begin(); it != m_collisionTrianglePair.end(); ++it)
     {
-		TrianglePair& tir_pair = const_cast<TrianglePair&>(*it);
-		testTwoTriangleEdgeCollision(tir_pair);
+		TrianglePair& tri_pair = const_cast<TrianglePair&>(*it);
+		testTwoTriangleEdgeCollision(tri_pair);
     }
 }
 
-void UntangleSolver::groupEdgeToContour()
+void UntangleSolver::groupHitPositionToContour()
 {
 	if (!m_isGlobalScheme)
 		return;
 	m_contourCorrect.clear();
-	m_edgeToContour.clear();
-	int contourId = -1;
-	for (auto& edgeTrianglePair : m_collisionEdgeTrianglePair)
-	{
-		//m_edgeToContour.insert({ edgeTrianglePair, 0 });
+	m_hitPosToGraph.clear();
 
-		auto it = m_edgeToContour.find(edgeTrianglePair);
-		if (it != m_edgeToContour.end())
-			continue;
+    int graphID = -1;
+    for (auto& hitPosIter : m_TriangleHitPositions)
+    {
+        auto& hitPos = hitPosIter.second;
+        auto graphIt = m_hitPosToGraph.find(hitPos.hash());
 
-		contourId += 1;
-		m_edgeToContour.insert({ edgeTrianglePair, contourId });
-		findContour(edgeTrianglePair.mEdge.mTriangleID, edgeTrianglePair.mTriangleID, edgeTrianglePair.mEdge, contourId);
+        if (hitPos.mType == SHARED_VERTEX)
+           continue;
 
-		//search in other direction
-		Edge adjacentEdge = findAdjacentTriangleEdge(edgeTrianglePair.mEdge);
-		EdgeTrianglePair adjacentEdgeTrianglePair = EdgeTrianglePair(adjacentEdge, edgeTrianglePair.mTriangleID, edgeTrianglePair.mHit_t);
-		if (adjacentEdge.isValid() &&
-			m_edgeToContour.find(adjacentEdgeTrianglePair) == m_edgeToContour.end())
-		{
-			m_edgeToContour.insert({ adjacentEdgeTrianglePair, contourId });
-			findContour(adjacentEdge.mTriangleID, adjacentEdgeTrianglePair.mTriangleID, adjacentEdge, contourId);
-		}
-	}
+        TriangleHitPoint curEdgeHitPoint = hitPos;
+
+        if (graphIt != m_hitPosToGraph.end())
+            continue;
+
+        TriangleHitPoint pairHitPos = findPairHitPos(hitPos);
+
+        //a new graph
+        graphID += 1;
+        m_hitPosToGraph.insert({ hitPos.hash(), graphID });
+        m_hitPosToGraph.insert({ pairHitPos.hash(), graphID });
+
+        for (const auto& curhitPos : std::initializer_list<TriangleHitPoint>{ hitPos, pairHitPos })
+        {
+            if (curhitPos.mType == EDGE_POINT)
+            {
+                Edge currentEdge(curhitPos.mTriangleID, curhitPos.mEdgeLocalID);
+                std::list<Edge> adjacentEdges = findAdjacentTriangleEdges(currentEdge);
+                for (const auto& adj_edge : adjacentEdges)
+                {
+                    findContour2(curhitPos.mTriangleID, curhitPos.mHitTriangleID, adj_edge.mTriangleID, curhitPos, graphID);
+                }
+            }
+            else
+            {
+                int cur_src_triangleID = curhitPos.mTriangleID0;
+                int cur_hit_triangleID = curhitPos.mTriangleID1;
+                if (cur_hit_triangleID != curEdgeHitPoint.mHitTriangleID)
+                    std::swap(cur_src_triangleID, cur_hit_triangleID);
+
+                std::vector<int> adjacnetTriangles = findVertexAdjacentTriangle(curhitPos.mVertexID);
+                for (int triID : adjacnetTriangles)
+                {
+                    if (triID == cur_src_triangleID || triID == cur_hit_triangleID)
+                        continue;
+                    TrianglePair tri_pair = TrianglePair(triID, cur_hit_triangleID);
+                    if (m_collisionTrianglePair.find(tri_pair) == m_collisionTrianglePair.end())
+                        continue;
+
+                    findContour2(cur_src_triangleID, cur_hit_triangleID, triID, curhitPos, graphID);
+                }
+            }
+
+        }
+    }
+
+	//int contourId = -1;
+	//for (auto& hitPosIter : m_TriangleHitPositions)
+	//{
+	//	//m_edgeToContour.insert({ edgeTrianglePair, 0 });
 
 
+	//	if (it != m_hitPosToContour.end())
+	//		continue;
+
+ //       if (hitPos.mType == SHARED_VERTEX)
+ //           continue;
+
+	//	contourId += 1;
+	//	m_hitPosToContour.insert({ hitPos.hash(), contourId });
+	//	findContour(edgeTrianglePair.mEdge.mTriangleID, edgeTrianglePair.mTriangleID, edgeTrianglePair.mEdge, contourId);
+
+	//	//search in other direction
+	//	Edge adjacentEdge = findAdjacentTriangleEdge(edgeTrianglePair.mEdge);
+	//	EdgeTrianglePair adjacentEdgeTrianglePair = EdgeTrianglePair(adjacentEdge, edgeTrianglePair.mTriangleID, edgeTrianglePair.mHit_t);
+	//	if (adjacentEdge.isValid() &&
+	//		m_hitPosToContour.find(adjacentEdgeTrianglePair) == m_hitPosToContour.end())
+	//	{
+	//		m_hitPosToContour.insert({ adjacentEdgeTrianglePair, contourId });
+	//		findContour(adjacentEdge.mTriangleID, adjacentEdgeTrianglePair.mTriangleID, adjacentEdge, contourId);
+	//	}
+	//}
+
+    std::cout << "Debug: find contour graph  " << graphID+1 << std::endl;
 }
 void UntangleSolver::calculateEdgeCorrectVector()
 {
 	m_contourToVertexMap.clear();
     m_edgeCorrects.clear();
-    for( const EdgeTrianglePair& edgeTri_pair : m_collisionEdgeTrianglePair )
+    for( const auto& hitPosIter : m_TriangleHitPositions )
     {
-        const Edge& edge = edgeTri_pair.mEdge;
+        const auto& hitPos = hitPosIter.second;
+        if (hitPos.mType == SHARED_VERTEX)
+            continue;
 
-        int triangleID = edgeTri_pair.mTriangleID;
+        Edge edge(hitPos.mTriangleID, hitPos.mEdgeLocalID);
+        int triangleID = hitPos.mHitTriangleID;
         Vec3 gvector = calculateGVector( edge,triangleID );
         
 		if (m_isGlobalScheme)
 		{
-			int contourID = m_edgeToContour.at(edgeTri_pair);
+			int contourID = m_hitPosToGraph.at(hitPosIter.first);
 			addContourCorrectVector(contourID, Edge(edge.mTriangleID, 0), gvector);
 			addContourCorrectVector(contourID, Edge(edge.mTriangleID, 1), gvector);
 			addContourCorrectVector(contourID, Edge(edge.mTriangleID, 2), gvector);
@@ -253,12 +448,11 @@ void UntangleSolver::calculateEdgeCorrectVector()
 			addEdgeCorrectVector(Edge(edge.mTriangleID, 1), gvector);
 			addEdgeCorrectVector(Edge(edge.mTriangleID, 2), gvector);
 
-			//addEdgeCorrectVector( edge , gvector );
 
-			//Vec3 gvector_for_triangle = -gvector;
-			//addEdgeCorrectVector( Edge(triangleID,0), gvector_for_triangle);
-			//addEdgeCorrectVector( Edge(triangleID,1), gvector_for_triangle);
-			//addEdgeCorrectVector( Edge(triangleID,2), gvector_for_triangle);
+			Vec3 gvector_for_triangle = -gvector;
+			addEdgeCorrectVector( Edge(triangleID,0), gvector_for_triangle);
+			addEdgeCorrectVector( Edge(triangleID,1), gvector_for_triangle);
+			addEdgeCorrectVector( Edge(triangleID,2), gvector_for_triangle);
 		}
     }
 }
@@ -353,42 +547,67 @@ Edge::Edge( int triangleID , int edgeLocalID )
     {
         assert(false);
     }
-
-
-
 }
 
-EdgeTrianglePair::EdgeTrianglePair(const Edge& edge , int triangleID,float hit_t)
-:mEdge(edge)
+Edge::Edge(int triangleID, int p0, int p1)
 {
     mTriangleID = triangleID;
-    mHit_t = hit_t;
+    const Triangle& triangle = UntangleSolver::singleton().getTriangles().at(mTriangleID);
+
+    if( (p0 == triangle.p0 && p1== triangle.p1) || (p0 == triangle.p1 && p1 == triangle.p0) )
+    {
+        mEdgeLocalID = 0;
+        mP0 = triangle.p0;
+        mP1 = triangle.p1;
+    }
+    else if ((p0 == triangle.p1 && p1 == triangle.p2) || (p0 == triangle.p2 && p1 == triangle.p1))
+    {
+        mP0 = triangle.p1;
+        mP1 = triangle.p2;
+        mEdgeLocalID = 1;
+    }
+    else if ((p0 == triangle.p0 && p1 == triangle.p2) || (p0 == triangle.p2 && p1 == triangle.p0))
+    {
+        mP0 = triangle.p2;
+        mP1 = triangle.p0;
+        mEdgeLocalID = 2;
+    }
+    else
+    {
+        assert(false);
+    }
+
 }
 
-bool UntangleSolver::testTriangleIntersect(int triangleID0, int triangleID1 )
+
+
+
+TriangleIntersectType UntangleSolver::testTriangleIntersect(int triangleID0, int triangleID1 )
 {
     Triangle& t1 = m_triangles[triangleID0];
     Triangle& t2 = m_triangles[triangleID1];
 
-	int shareVertex = 0;
-    int sharedVertexID = -1;
+    if (triangleID0 == 853 && triangleID1 == 1636)
+    {
+        //generateDebugCode(m_particles[t1.p0].mCurPosition, 
+        //                    m_particles[t1.p1].mCurPosition, 
+        //                    m_particles[t1.p2].mCurPosition,
+        //                    m_particles[t2.p0].mCurPosition, 
+        //                    m_particles[t2.p1].mCurPosition, 
+        //                    m_particles[t2.p2].mCurPosition);
 
-    if (t1.p0 == t2.p0 || t1.p0 == t2.p1 || t1.p0 == t2.p2)
-    {
-        ++shareVertex;
-        sharedVertexID = t1.p0;
-    }
-    if (t1.p1 == t2.p0 || t1.p1 == t2.p1 || t1.p1 == t2.p2)
-    {
-        ++shareVertex;
-        sharedVertexID = t1.p1;
-    }
-    if (t1.p2 == t2.p0 || t1.p2 == t2.p1 || t1.p2 == t2.p2)
-    {
-        ++shareVertex;
-        sharedVertexID = t1.p2;
-    }
+        bool ret = GeometryMath::isTriangleIntersect(
+            Vec3(0.028800, -0.430300, 0.122500),
+            Vec3(0.006091, -0.434383, 0.103956),
+            Vec3(0.023555, -0.479317, 0.114574),
+            Vec3(0.012833, -0.474400, 0.106400),
+            Vec3(0.022169, -0.416075, 0.105390),
+            Vec3(0.006433, -0.457500, 0.122400)
+        );
+        std::cout << ret << std::endl;
 
+    }
+	int shareVertex = getShareVertexCount(triangleID0, triangleID1);
     if (shareVertex == 0)
     {
 
@@ -405,37 +624,30 @@ bool UntangleSolver::testTriangleIntersect(int triangleID0, int triangleID1 )
         //	generateDebugCode(m_particles[t1.p0].mCurPosition, m_particles[t1.p1].mCurPosition, m_particles[t1.p2].mCurPosition,
         //		m_particles[t2.p0].mCurPosition, m_particles[t2.p1].mCurPosition, m_particles[t2.p2].mCurPosition);
         //}
-        return ret1;
+        return ret1 ? NO_SHARE_INTERSECTION : NO_INTERSECTION;
     }
     else if(shareVertex == 1)
     {
-        int p0, p1;
-        if (t2.p0 == sharedVertexID)
-        {
-            p0 = t2.p1;
-            p1 = t2.p2;
-        }
-        else if (t2.p1 == sharedVertexID)
-        {
-            p0 = t2.p0;
-            p1 = t2.p2;
-        }
-        else
-        {
-            assert(t2.p2 == sharedVertexID);
-            p0 = t2.p0;
-            p1 = t2.p1;
-        }
-        return GeometryMath::isSharedSingleVertexTriangleIntersect(
-            m_particles[t1.p0].mCurPosition, m_particles[t1.p1].mCurPosition, m_particles[t1.p2].mCurPosition,
+
+        auto rerangeIndices0 = rerangeTriangleVertexListByShare(triangleID0, triangleID1);
+        auto rerangeIndices1 = rerangeTriangleVertexListByShare(triangleID1, triangleID0);
+        size_t p0 = (size_t)rerangeIndices1[1];
+        size_t p1 = (size_t)rerangeIndices1[2];
+
+        bool ret = GeometryMath::isSharedSingleVertexTriangleIntersect(
+            m_particles[rerangeIndices0[0]].mCurPosition, 
+            m_particles[rerangeIndices0[1]].mCurPosition, 
+            m_particles[rerangeIndices0[2]].mCurPosition,
             m_particles[p0].mCurPosition, 
             m_particles[p1].mCurPosition);
+
+        return ret ? SINGLE_SHARE_INTERSECTION : NO_INTERSECTION;
 
     }
     else
     {
         assert(shareVertex == 2);
-        return false;
+        return NO_INTERSECTION;
     }
 
 
@@ -490,9 +702,108 @@ Vec3 UntangleSolver::calculateGVector(const Edge& edge, int triangleID)
 
 }
 
+TriangleHitPoint UntangleSolver::findPairHitPos(const TriangleHitPoint& hitPos)
+{
+    auto tri_pair_ids = hitPos.getTwoTriangles();
+    TrianglePair tri_pir(tri_pair_ids.first, tri_pair_ids.second);
+    auto itor = m_collisionTrianglePair.find(tri_pir);
+    assert(itor != m_collisionTrianglePair.end());
+    assert(itor->mHitPos.size() == 2);
+    for (const auto& curHitPos : itor->mHitPos)
+    {
+        if (curHitPos.hash() == hitPos.hash() )
+            continue;
+        return curHitPos;
+    }
+    //should not arrive here
+    assert(false);
+    return hitPos;
+}
+
+void UntangleSolver::findContour2(int src_triangleID, int hit_triangleID, int target_triangleID, const TriangleHitPoint& src_hitPos, int graphID)
+{
+    TrianglePair tri_pair(target_triangleID, hit_triangleID);
+    auto itor = m_collisionTrianglePair.find(tri_pair);
+    assert(itor != m_collisionTrianglePair.end());
+   
+    //match hitPos
+    const TrianglePair& collisionTrianglePair = *itor;
+    int matchIndex = -1;
+    for (int i = 0, n = (int) collisionTrianglePair.mHitPos.size(); i <n; ++i)
+    {
+        const auto& hitPos = collisionTrianglePair.mHitPos.at(i);
+        if (isHitPosMatch(src_hitPos,  hitPos))
+        {
+            matchIndex = i;
+        }
+    }
+
+    assert(matchIndex == 0 || matchIndex == 1);
+    TriangleHitPoint curHitPos = collisionTrianglePair.mHitPos[matchIndex];
+    TriangleHitPoint curPairHitPos = collisionTrianglePair.mHitPos[2-1-matchIndex];
+
+    if (m_hitPosToGraph.find(curHitPos.hash()) != m_hitPosToGraph.end())
+        return;
+
+    assert(m_hitPosToGraph.find(curPairHitPos.hash()) == m_hitPosToGraph.end());
+    m_hitPosToGraph.emplace(curHitPos.hash(), graphID);
+    m_hitPosToGraph.emplace(curPairHitPos.hash(), graphID);
+
+    if (curPairHitPos.mType == EDGE_POINT)
+    {
+        Edge currentEdge(curPairHitPos.mTriangleID, curPairHitPos.mEdgeLocalID);
+        std::list<Edge> adjacentEdges = findAdjacentTriangleEdges(currentEdge);
+        for (const auto& adj_edge : adjacentEdges)
+        {
+            findContour2( curPairHitPos.mTriangleID, curPairHitPos.mHitTriangleID, adj_edge.mTriangleID, curPairHitPos, graphID );
+        }
+    }
+    else
+    {
+        int cur_src_triangleID = curPairHitPos.mTriangleID0;
+        int cur_hit_triangleID = curPairHitPos.mTriangleID1;
+        if (cur_hit_triangleID != hit_triangleID)
+            std::swap(cur_src_triangleID, cur_hit_triangleID);
+
+        std::vector<int> adjacnetTriangles = findVertexAdjacentTriangle(curPairHitPos.mVertexID);
+        for (int triID : adjacnetTriangles)
+        {
+            if ( triID == cur_src_triangleID || triID == cur_hit_triangleID)
+                continue;
+            tri_pair = TrianglePair(triID, hit_triangleID);
+            if (m_collisionTrianglePair.find(tri_pair) == m_collisionTrianglePair.end())
+                continue;
+
+            findContour2(cur_src_triangleID, cur_hit_triangleID, triID, curPairHitPos, graphID);
+        }
+    }
+
+}
+
+bool UntangleSolver::isHitPosMatch(const TriangleHitPoint& hitPos1, const TriangleHitPoint& hitPos2)
+{
+    if (hitPos1.mType != hitPos2.mType)
+        return false;
+
+    if (hitPos1.mType == EDGE_POINT)
+    {
+        Edge edge1(hitPos1.mTriangleID, hitPos1.mEdgeLocalID);
+        Edge edge2(hitPos2.mTriangleID, hitPos2.mEdgeLocalID);
+        if (edge1.mP0 == edge2.mP0 && edge1.mP1 == edge2.mP1)
+            return true;
+        if (edge1.mP0 == edge2.mP1 && edge1.mP1 == edge2.mP0)
+            return true;
+        return false;
+    }
+    else
+    {
+        return hitPos1.mVertexID == hitPos2.mVertexID;
+    }
+}
+
 
 void UntangleSolver::findContour(int edgeTraignleID, int triangleID, Edge currentHitedge, int contourId)
-{
+{/*
 	auto it = m_collisionTrianglePair.find({ edgeTraignleID, triangleID });
 
     assert(it != m_collisionTrianglePair.end());
@@ -521,10 +832,10 @@ void UntangleSolver::findContour(int edgeTraignleID, int triangleID, Edge curren
 		Edge adjacentTriangleEdge;
 		Edge hitEdge = Edge(edgeTraignleID, it->mHitPos[theOtherHitIdx].mEdgeLocalID);
 		EdgeTrianglePair edgeTraignlePair = EdgeTrianglePair(hitEdge, triangleID, it->mHitPos[theOtherHitIdx].m_t);
-		bool isInserted = m_edgeToContour.insert({ edgeTraignlePair, contourId }).second;
+		bool isInserted = m_hitPosToContour.insert({ edgeTraignlePair, contourId }).second;
 		if (!isInserted)
 		{
-			assert(m_edgeToContour[edgeTraignlePair] == contourId);
+			assert(m_hitPosToContour[edgeTraignlePair] == contourId);
 			return;
 		}
 
@@ -533,11 +844,11 @@ void UntangleSolver::findContour(int edgeTraignleID, int triangleID, Edge curren
 		if (!adjacentTriangleEdge.isValid())
 			return;
 		edgeTraignlePair = EdgeTrianglePair(adjacentTriangleEdge, triangleID, it->mHitPos[theOtherHitIdx].m_t);
-		isInserted = m_edgeToContour.insert({ edgeTraignlePair, contourId }).second;
+		isInserted = m_hitPosToContour.insert({ edgeTraignlePair, contourId }).second;
 		if (!isInserted)
 		{
 			//find a ring
-			assert(m_edgeToContour[edgeTraignlePair] == contourId);
+			assert(m_hitPosToContour[edgeTraignlePair] == contourId);
 			return;
 		}
 		else
@@ -555,4 +866,5 @@ void UntangleSolver::findContour(int edgeTraignleID, int triangleID, Edge curren
 
 		findContour(edgeTraignleID, adjacentTriangle.mTriangleID, adjacentTriangle, contourId);
 	}
+    */
 }
