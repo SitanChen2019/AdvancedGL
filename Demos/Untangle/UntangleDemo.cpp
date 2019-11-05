@@ -6,6 +6,8 @@
 #include "UntangleSolver.h"
 #include <GLFW/glfw3.h>
 
+#include "Simulator.h"
+
 void UntangleDemo::loadModel( std::string modelName )
 {
 	ModelLoader loader(modelName.c_str());
@@ -15,41 +17,7 @@ void UntangleDemo::loadModel( std::string modelName )
 		optimizeMesh(tessellationDatas[i]);
 
 	//init solover
-	Vector<Particle> particles;
-	Vector<Triangle> triangles;
-	int vertex_offset = 0;
-	int pid = 0;
-	int tid = 0;
-	int meshID = 0;
-	m_meshInvMass.clear();
-	m_meshInvMass.resize(tessellationDatas.size(), 0.1f);
-	for (auto& meshdata : tessellationDatas)
-	{
-		for (auto& pos : meshdata.vertices)
-		{
-			Particle p;
-			p.mCurPosition = pos;
-			p.mPrePosition = pos;
-			p.mPID = pid++;
-			p.mInvMass = m_meshInvMass[meshID];
-			particles.push_back(p);
-		}
-
-		for (size_t i = 0; i < meshdata.indices.size(); i += 3)
-		{
-			Triangle t;
-			t.p0 = meshdata.indices[i] + vertex_offset;
-			t.p1 = meshdata.indices[i + 1] + vertex_offset;
-			t.p2 = meshdata.indices[i + 2] + vertex_offset;
-			t.mTID = tid++;
-
-			triangles.push_back(t);
-		}
-
-		vertex_offset += (int)meshdata.vertices.size();
-		++meshID;
-	}
-	UntangleSolver::singleton().init(std::move(particles), std::move(triangles));
+    initUntangleSolver(tessellationDatas);
 
 	m_box = AABB();
 	for (auto& meshdata : tessellationDatas)
@@ -72,6 +40,48 @@ void UntangleDemo::loadModel( std::string modelName )
 	Global::cameraControl().fitBox(m_box);
 
 	m_tessellationDatas.swap(tessellationDatas);
+}
+
+
+
+void UntangleDemo::initUntangleSolver(const Vector<MeshData>& tessellationDatas)
+{
+    Vector<Particle> particles;
+    Vector<Triangle> triangles;
+    int vertex_offset = 0;
+    int pid = 0;
+    int tid = 0;
+    int meshID = 0;
+    m_meshInvMass.clear();
+    m_meshInvMass.resize(tessellationDatas.size(), 0.1f);
+    for (auto& meshdata : tessellationDatas)
+    {
+        for (auto& pos : meshdata.vertices)
+        {
+            Particle p;
+            p.mCurPosition = pos;
+            p.mPrePosition = pos;
+            p.mPID = pid++;
+            p.mInvMass = m_meshInvMass[meshID];
+            particles.push_back(p);
+        }
+
+        for (size_t i = 0; i < meshdata.indices.size(); i += 3)
+        {
+            Triangle t;
+            t.p0 = meshdata.indices[i] + vertex_offset;
+            t.p1 = meshdata.indices[i + 1] + vertex_offset;
+            t.p2 = meshdata.indices[i + 2] + vertex_offset;
+            t.mTID = tid++;
+
+            triangles.push_back(t);
+        }
+
+        vertex_offset += (int)meshdata.vertices.size();
+        ++meshID;
+    }
+
+    UntangleSolver::singleton().init(std::move(particles), std::move(triangles));
 }
 
 bool UntangleDemo::init()

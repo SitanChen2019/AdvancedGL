@@ -1,7 +1,7 @@
 #ifndef PBD_PARTILE_H
 #define PBD_PARTILE_H
 
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 
 namespace PBD
 {
@@ -14,6 +14,17 @@ struct Particle
 };
 
 
+struct Triangle
+{
+    unsigned p0;
+    unsigned p1;
+    unsigned p2;
+};
+
+struct ParticleExt : public Particle
+{
+
+};
 
 
 }

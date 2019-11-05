@@ -10,4 +10,4 @@ file(GLOB PBD_SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp )
 
 add_library(PBDSim SHARED ${PBD_HEAD} ${PBD_SRC})
 target_include_directories( PBDSim PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include )
-target_include_directories( PBDSim PRIVATE ${THIRD_PARTY_ROOT}/glm  ${THIRD_PARTY_ROOT}/boost-1.71  )
+target_include_directories( PBDSim PRIVATE ${THIRD_PARTY_ROOT}/glm/include  ${THIRD_PARTY_ROOT}/boost-1.71/include  )
