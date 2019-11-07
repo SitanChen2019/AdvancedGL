@@ -15,11 +15,13 @@ namespace PBD
     }
 
     void Simualtor::init(std::vector<Particle>&& particles,
-        std::vector<Triangle>&& triangles
+        std::vector<Triangle>&& triangles,
+        std::vector<Constraint>&& constraints
     )
     {
         mParticles.swap(particles);
-            mTriangles.swap( triangles);
+        mTriangles.swap( triangles);
+        mConstraints.swap(constraints);
     }
 
     void Simualtor::deinit()
@@ -47,8 +49,10 @@ namespace PBD
         for(unsigned i= 0, n = (unsigned)mParticles.size(); i < n; ++i )
         {
             Particle& p = mParticles[i];
+            if (p.mInvMass == 0)
+                continue;
+
             p.mVelocity += t * p.mInvMass* getExtForce(p);
-            p.mCurPos += p.mVelocity * t;
         }
         
         //predicate the current position with velocity
@@ -77,12 +81,14 @@ namespace PBD
     void Simualtor::postUpdate()
     {
 
+
     }
 
     
     glm::vec3 Simualtor::getExtForce(const Particle& particle)
     {
-        return  mSetting.GRAVITY;
+        assert(particle.mInvMass != 0);
+        return  mSetting.GRAVITY/ particle.mInvMass;
     }
     
 }

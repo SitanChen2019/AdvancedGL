@@ -7,6 +7,8 @@
 #include <GLFW/glfw3.h>
 
 #include "Simulator.h"
+#include "Constraints.h"
+#include <unordered_set>
 
 void UntangleDemo::loadModel( std::string modelName )
 {
@@ -44,6 +46,8 @@ void UntangleDemo::loadModel( std::string modelName )
 	Global::cameraControl().fitBox(m_box);
 
 	m_tessellationDatas.swap(tessellationDatas);
+
+    m_autoRun = false;
 }
 
 
@@ -64,6 +68,7 @@ void UntangleDemo::initSimulationSolver(const Vector<MeshData>& tessellationData
             p.mCurPos = pos;
             p.mPrePos = pos;
             p.mInvMass = m_meshInvMass[meshID];
+            p.mVelocity = Vec3(0);
             particles.push_back(p);
         }
 
@@ -80,7 +85,40 @@ void UntangleDemo::initSimulationSolver(const Vector<MeshData>& tessellationData
         ++meshID;
     }
 
-    PBD::Simualtor::singleton().init(std::move(particles), std::move(triangles));
+    //init constraint
+    std::unordered_set<size_t> processedEdges;
+    std::vector<PBD::Constraint> vecConstrains;
+    vecConstrains.reserve(triangles.size());
+
+    for (const auto triangle : triangles)
+    {
+        auto getEdgeUniqueId = [](int vid0, int vid1) -> size_t
+        {
+            size_t seed = vid0 < vid1 ? vid0 : vid1;
+            boost::hash_combine(seed, vid0 < vid1 ? vid1 : vid0);
+            return seed;
+        };
+
+        for (auto vertexPair :
+            std::initializer_list<std::pair<int, int>>{ {triangle.p0,triangle.p1},{triangle.p0,triangle.p2},{triangle.p1,triangle.p2} })
+        {
+            int vid0 = vertexPair.first;
+            int vid1 = vertexPair.second;
+            size_t edgeID = getEdgeUniqueId(vid0,vid1);
+            if (processedEdges.find(edgeID) == processedEdges.end())
+            {
+                processedEdges.insert(edgeID);
+
+                float distance = glm::distance( particles.at(vid0).mCurPos, 
+                    particles.at(vid1).mCurPos );
+                PBD::DistanceConstraint dc(vid0, vid1, distance);
+                vecConstrains.push_back(PBD::Constraint(dc));
+            }
+        }
+    }
+
+    PBD::Simualtor::singleton().init(std::move(particles), std::move(triangles), 
+        std::move(vecConstrains));
 }
 
 void UntangleDemo::initUntangleSolver(const Vector<MeshData>& tessellationDatas)
@@ -242,6 +280,11 @@ void UntangleDemo::optimizeMesh(MeshData& meshData)
 
 }
 
+void UntangleDemo::switchRun()
+{
+    m_autoRun = !m_autoRun;
+}
+
 void UntangleDemo::exeOneStep()
 {
     std::vector<PBD::Particle>&  vecSimParticle = PBD::Simualtor::singleton().getParticles();
@@ -266,7 +309,16 @@ void UntangleDemo::exeOneStep()
 
 bool UntangleDemo::update()
 {
-	bool bSpacePressed = glfwGetKey(Global::renderWindow().getGLFWWindow(), GLFW_KEY_SPACE);
+    bool bSpacePressed = false;
+    
+    if (!m_autoRun)
+    {
+        bSpacePressed = glfwGetKey(Global::renderWindow().getGLFWWindow(), GLFW_KEY_SPACE);
+    }
+    else
+    {
+        exeOneStep();
+    }
 
 	//copy the vertex to render
 	Particle* pParticle = UntangleSolver::singleton().getParticles().data();

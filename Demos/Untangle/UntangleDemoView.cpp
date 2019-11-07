@@ -16,6 +16,11 @@ void UntangleDemoView::drawUI()
         m_pModel->exeOneStep();
     }
 
+    if (ImGui::Button("Switch"))
+    {
+        m_pModel->switchRun();
+    }
+
 	char modelName[512]{0};
 	if (ImGui::InputText("Model", modelName, 512, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll))
 	{

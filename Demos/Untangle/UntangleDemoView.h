@@ -15,6 +15,8 @@ public:
 	virtual int getMeshCount() = 0;
 	virtual void setMeshInvMass(int meshID, float value) = 0;
 	virtual float getMeshInvMass(int meshID) = 0;
+
+    virtual void switchRun() = 0;
 };
 
 class UntangleDemoView : public IUIView

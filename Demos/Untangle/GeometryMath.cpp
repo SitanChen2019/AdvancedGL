@@ -114,57 +114,13 @@ namespace GeometryMath {
 	//the intersectPt must be on the triangle plane
 	bool Triangle::isPointInTriangle(const Vec3& intersectPt) const
 	{
-		/*
-		* In the second step we try to test if intersectPt is inside the triangle.
-		* for any point p on the triangle plane,we can get three vector( v0-p, v1-p , v2-p), we say it (u, v ,k)
-		* If we choose any two vector (if they are not on the same line) as axis of a 2-D coordindte system,
-		* there must be some a and b make it happen : k = a*u + b*v.
-		* the third vector must be in the third quadrant if p is inside the triangle.
-		* So we can test if a < 0 and b < 0
-		*/
-
-		auto pV0 = m_v0 - intersectPt;
-		auto pV1 = m_v1 - intersectPt;
-		auto pV2 = m_v2 - intersectPt;
-
-		auto u = pV0;
-		auto v = pV1;
-		auto k = pV2;
-
-		/*
-		Ux*a + Vx*b = Kx  ------- formual_1
-		Uy*a + Vy*b = Ky  ------- formual_2
-		Uz*a + Vz*b = Kz  ------- formual_3
-		*/
-		REAL denominator, numerator_a, numerator_b;
-
-
-		REAL denominator_12 = fabs(u.x * v.y - u.y * v.x);
-		REAL denominator_13 = fabs(u.x * v.z - u.z * v.x);
-		REAL denominator_23 = fabs(u.y * v.z - u.z * v.y);
-		if (denominator_12 > denominator_13&& denominator_12 >= denominator_23)
-		{
-			denominator = u.x * v.y - u.y * v.x;
-			numerator_a = k.x * v.y - k.y * v.x;
-			numerator_b = -k.x * u.y + k.y * u.x;
-		}
-		else if (denominator_13 > denominator_12&& denominator_13 >= denominator_23)
-		{
-			denominator = u.x * v.z - u.z * v.x;
-			numerator_a = k.x * v.z - k.z * v.x;
-			numerator_b = -k.x * u.z + k.z * u.x;
-		}
-		else
-		{
-			denominator = u.y * v.z - u.z * v.y;
-			numerator_a = k.y * v.z - k.z * v.y;
-			numerator_b = -k.y * u.z + k.z * u.y;
-		}
-
-		if (isDifferentSignal(numerator_a, denominator) && isDifferentSignal(numerator_b, denominator))
-			return true;
-		else
-			return false;
+        if (glm::dot(glm::cross(m_v1 - intersectPt, m_v2 - intersectPt), m_normal) < 0)
+            return false;
+        if (glm::dot(glm::cross(m_v2 - intersectPt, m_v0 - intersectPt), m_normal) < 0)
+            return false;
+        if (glm::dot(glm::cross(m_v0 - intersectPt, m_v1 - intersectPt), m_normal) < 0)
+            return false;
+        return true;
 	}
 
 	//void Triangle::test(Vec3 t1, Vec3 t2, Vec3 t3, Vec3 p1, Vec3 p2)
@@ -420,7 +376,8 @@ namespace GeometryMath {
 			if (near_zero_num == 7)
 			{
 				//test if two coplanar triangle intersections
-				return testT0T1crossE0E1(r0, r1) || testT0T1crossE0E1(r0, r2) || testT0T1crossE0E1(r1, r2);
+				//return testT0T1crossE0E1(r0, r1) || testT0T1crossE0E1(r0, r2) || testT0T1crossE0E1(r1, r2);
+                return false; //we ignore the hit in this case
 			}
 			else if (near_zero_num == 6 || near_zero_num == 5 || near_zero_num == 3)
 			{
@@ -446,31 +403,45 @@ namespace GeometryMath {
 
 				if (near_zero_num == 4) //D0 is zero
 				{
-					if ( (sign_key != 1) && (sign_key != 2) )
-						return false;
-					
-					float beta12 = D2 / (D2 - D1);
-					t0 = beta12 * r1 + (1 - beta12) * r2;
-					t1 = r0;
+                    if (sign_key == 1 || sign_key == 2 )
+                    {
+                        float beta12 = D2 / (D2 - D1);
+                        t0 = beta12 * r1 + (1 - beta12) * r2;
+                        t1 = r0;
+                    }
+                    else
+                    {
+                        //test if r0 is in the plane
+                        return Triangle(Vec3(0), e0, e1).isPointInTriangle(r0);
+                    }
+
 
 				}
 				else if (near_zero_num == 2) //D1 is zero
 				{
-					if ((sign_key != 4) && (sign_key != 1))
-						return false;
-	
-					float beta02 = D2 / (D2 - D0);
-					t0 = beta02 * r0 + (1 - beta02) * r2;
-					t1 = r1;
+                    if (sign_key == 4 || sign_key == 1)
+                    {
+                        float beta02 = D2 / (D2 - D0);
+                        t0 = beta02 * r0 + (1 - beta02) * r2;
+                        t1 = r1;
+                    }
+                    else
+                    {
+                        return Triangle(Vec3(0), e0, e1).isPointInTriangle(r1);
+                    }
 				}
 				else if (near_zero_num == 1) //D2 is zero
 				{
-					if ((sign_key != 4) && (sign_key != 2))
-						return false;
-
-					float beta01 = D1 / (D1 - D0);
-					t0 = beta01 * r0 + (1 - beta01) * r1;
-					t1 = r2;
+                    if (sign_key == 4 || sign_key == 2)
+                    {
+                        float beta01 = D1 / (D1 - D0);
+                        t0 = beta01 * r0 + (1 - beta01) * r1;
+                        t1 = r2;
+                    }
+                    else
+                    {
+                        return Triangle(Vec3(0), e0, e1).isPointInTriangle(r2);
+                    }
 				}
 			}
 		}

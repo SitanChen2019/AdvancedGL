@@ -5,6 +5,7 @@
 #include "Particle.h"
 #include <vector>
 #include "SimSettings.h"
+#include "Constraints.h"
 
 namespace PBD
 {
@@ -20,7 +21,8 @@ namespace PBD
         void postUpdate();
         
         void init(std::vector<Particle>&& particles,
-            std::vector<Triangle>&& triangles
+            std::vector<Triangle>&& triangles,
+            std::vector<Constraint>&& constraints
             );
         void deinit();
 
@@ -42,7 +44,8 @@ namespace PBD
         SimSettings mSetting;
 
         std::vector<Particle> mParticles;
-        std::vector<Triangle> mTriangles;  
+        std::vector<Triangle> mTriangles;
+        std::vector<Constraint> mConstraints;
     };
 }
 #endif

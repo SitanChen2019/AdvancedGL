@@ -71,7 +71,7 @@ struct  Edge
 
 	bool isValid()
 	{
-		return mP0 > 0;
+		return mP0 != -1;
 	}
 };
 
@@ -83,6 +83,14 @@ enum TriangleHitPointType
 
 struct TriangleHitPoint
 {
+    TriangleHitPoint(const TriangleHitPoint&) = delete;
+
+    TriangleHitPoint(const TriangleHitPoint&& other)
+        :mType( other.mType)
+    {
+        memcpy_s(this, sizeof(TriangleHitPoint), &other, sizeof(TriangleHitPoint));
+    }
+
     const TriangleHitPointType mType;
 
     union
@@ -100,7 +108,13 @@ struct TriangleHitPoint
             int mTriangleID1;
         };
     };
+
     size_t mHashCode;
+    size_t mPairHashcode;
+    size_t mFaimilyHashCode;
+    int    mGraphID;
+    int    mContourID;
+    bool   mSetGroupFlag;
 
     TriangleHitPoint( int vertexID, int triangleID0, int triangleID1)
         :mType( SHARED_VERTEX )
@@ -113,6 +127,11 @@ struct TriangleHitPoint
         boost::hash_combine(mHashCode, mVertexID);
         boost::hash_combine(mHashCode, mTriangleID0);
         boost::hash_combine(mHashCode, mTriangleID1);
+
+        mPairHashcode = -1;
+        mGraphID = -1;
+        mContourID = -1;
+        mSetGroupFlag = false;
     }
 
 	TriangleHitPoint( Edge edge , float t , int hitTriangleID)
@@ -128,6 +147,11 @@ struct TriangleHitPoint
         boost::hash_combine(mHashCode, mEdgeLocalID);
         boost::hash_combine(mHashCode, mHitTriangleID);
         boost::hash_combine(mHashCode, m_t);
+
+        mPairHashcode = -1;
+        mGraphID = -1;
+        mContourID = -1;
+        mSetGroupFlag = false;
 	}
 
     std::pair<int, int> getTwoTriangles() const
@@ -212,7 +236,7 @@ struct TrianglePair
 
     int mTriangleID0;
     int mTriangleID1;
-	std::vector<TriangleHitPoint> mHitPos;
+	std::vector<size_t> mHitPos;
 
 
     bool operator<( const TrianglePair& other) const
@@ -226,9 +250,9 @@ struct TrianglePair
         }
     }
 
-	void addHitPos(const TriangleHitPoint& hitPos )
+	void addHitPos(const size_t hpKey )
 	{
-		mHitPos.emplace_back(hitPos);
+		mHitPos.emplace_back(hpKey);
 	}
 
 
@@ -314,7 +338,15 @@ private:
     //temp data
     void findCollisionTrianglePairs();
     void calculateEdgeTriangleIntersection();
-	void groupHitPositionToContour();
+	void groupHitPositionToGraph();
+
+
+    int makeUniqueContourID(int graphID, int contourID);
+    void divideGraphToContour(int graphID, const std::set<size_t>& hitPosSet );
+
+    void setContourIDToPair( TriangleHitPoint& hitpos, int contourID);
+    void setContourIDToAdjacents(TriangleHitPoint& hitpos, int contourID);
+
     void calculateEdgeCorrectVector();
     void correctParticles();
 
@@ -328,16 +360,33 @@ private:
 	bool testTwoTriangleEdgeCollision( TrianglePair& triPair);
 	std::list<Edge> findAdjacentTriangleEdges(const Edge& edge);
     std::vector<int> findVertexAdjacentTriangle(int vertexID);
-
-	void findContour(int edgeTraignleID, int triangleID, Edge currentEdge, int contourId);
+    std::set<size_t> findTwinsHp(const TriangleHitPoint& src_hitPos);
 
     void findContour2(int src_triangleID, int hit_triangleID, int target_triangleID, const TriangleHitPoint& src_hitPos, int graphID);
+    void setGraphIDToPair(TriangleHitPoint& src_hitPos, int groupID);
+    void setGraphIDTOAdjacent(TriangleHitPoint& src_hitPos, int groupID);
 
     int getShareVertexCount(int triangleID0, int triangleID1) const;
     std::array<int, 3> rerangeTriangleVertexListByShare(int triangleID0, int triangleID1 ) const;
 
-    TriangleHitPoint findPairHitPos(const TriangleHitPoint& hitPos);
+    size_t findPairHitPos(const TriangleHitPoint& hitPos);
     bool isHitPosMatch(const TriangleHitPoint& hitPos1, const TriangleHitPoint& hitPos2);
+
+    void minimizeGlobalContour(const std::set<size_t>& hpSet);
+    void minimizeLocalContour();
+
+
+    void setGroupToPair(TriangleHitPoint& hitPos, std::set<size_t>& edgeSideGroup,  std::set<size_t>& triSideGroup );
+    void setGroupToAdjacent(TriangleHitPoint& hitPos, std::set<size_t>& edgeSideGroup, std::set<size_t>& triSideGroup);
+
+    void applyOffsetToParticle();
+
+    void debugTriangleIntersection(int tri0, int tri1);
+
+    void update_local();
+    void update_global();
+
+    void clearTmpData();
 private:
 	bool m_isGlobalScheme = true;
 
@@ -347,14 +396,14 @@ private:
 	std::map<VertexPair, std::array<Edge, 2>> m_shareEdgeMap;
 
     std::set<TrianglePair> m_collisionTrianglePair;
-
     std::unordered_map<size_t, TriangleHitPoint> m_TriangleHitPositions;
+    std::map<int, std::set<size_t>> m_GrpahToHitPosMap;
+    std::map<int, std::set<size_t>> m_ContourToHitPosMap;
+    std::map<size_t, std::set<size_t>> m_familtyHpMaps;
 
-    std::map<Edge,EdgeCorrect> m_edgeCorrects;
+    std::vector<int> m_vertexUpdateFlags;
+    std::vector<Vec3> m_vertexAccumOffset;
 
-	std::map<size_t, int> m_hitPosToGraph;
-	std::map<int, EdgeCorrect> m_contourCorrect;
-	std::map<int, std::set<int>> m_contourToVertexMap;
 
 };
 

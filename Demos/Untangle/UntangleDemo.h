@@ -20,6 +20,7 @@ public:
 	bool destroy() override;
 
 	void exeOneStep() override;
+    void switchRun() override;
 	void reloadModel(std::string modelName) override;
 
 	 bool isGlobalScheme() override;
@@ -46,7 +47,7 @@ private:
 	std::vector<TriMeshRenderable*> m_meshes;
 	Vector<MeshData> m_tessellationDatas;
 	UntangleDemoView* m_pUI = nullptr;
-
+    bool m_autoRun = false;
 	std::vector<float> m_meshInvMass;
 };
 #endif

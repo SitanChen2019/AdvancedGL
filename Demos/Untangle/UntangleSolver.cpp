@@ -48,11 +48,14 @@ UntangleSolver& UntangleSolver::singleton()
     return s_instance;
 }
 
-void UntangleSolver::init( std::vector<Particle>&& particles, std::vector<Triangle>&& triangles )
+void UntangleSolver::init( std::vector<Particle>&& particles,
+                           std::vector<Triangle>&& triangles)
 {
     m_particles.swap( particles );
     m_triangles.swap( triangles );
 	m_shareEdgeMap.clear();
+    m_vertexUpdateFlags.resize(particles.size());
+    m_vertexAccumOffset.resize(m_particles.size(), Vec3(0));
 
 	for (size_t i = 0, n = m_triangles.size(); i < n; ++i)
 	{
@@ -128,10 +131,46 @@ void UntangleSolver::preUpdate() {
     }
 }
 
+void UntangleSolver::clearTmpData()
+{
+    m_collisionTrianglePair.clear();
+    m_TriangleHitPositions.clear();
+    m_GrpahToHitPosMap.clear();
+    m_ContourToHitPosMap.clear();
+    m_familtyHpMaps.clear();
+    m_vertexAccumOffset.assign(m_particles.size(), Vec3(0));
+}
+
 void UntangleSolver::update()
 {
-    findCollisionTrianglePairs();
+    if (m_isGlobalScheme)
+        update_global();
+    else
+        update_local();
+}
 
+void UntangleSolver::update_local()
+{
+    findCollisionTrianglePairs();
+    calculateEdgeTriangleIntersection();
+
+    minimizeLocalContour();
+
+    //apply offset
+    for (size_t i = 0; i < m_particles.size(); ++i)
+    {
+        Vec3 offset = m_vertexAccumOffset[i];
+        m_particles[i].mCurPosition += offset;
+    }
+
+    clearTmpData();
+}
+
+void UntangleSolver::update_global()
+{
+    
+
+    findCollisionTrianglePairs();
     calculateEdgeTriangleIntersection();
 
 	for (auto& it : m_collisionTrianglePair)
@@ -139,13 +178,27 @@ void UntangleSolver::update()
 		if (it.mHitPos.size() != 2)
 		{
 			std::cout << "Warning Triangle Test True, Edge Test False: " << it.mTriangleID0 << " " << it.mTriangleID1 << std::endl;
+
+            //debugTriangleIntersection(it.mTriangleID0, it.mTriangleID1);
 		} 
 	}
-	groupHitPositionToContour();
+	groupHitPositionToGraph();
 
-    //calculateEdgeCorrectVector();
+    std::cout << "Debug: find  graph  " << m_GrpahToHitPosMap.size() << std::endl;
+    for (auto iter : m_GrpahToHitPosMap)
+    {
+        divideGraphToContour(iter.first, iter.second);
+    }
 
-    //correctParticles();
+    std::cout << "Debug: find contour   " << m_ContourToHitPosMap.size() << std::endl;
+    for (auto iter : m_ContourToHitPosMap)
+    {
+        minimizeGlobalContour(iter.second);
+    }
+
+    applyOffsetToParticle();
+    
+    clearTmpData();
 }
 
 void UntangleSolver::postUpdate() {
@@ -253,8 +306,9 @@ bool UntangleSolver::testTwoTriangleEdgeCollision(TrianglePair& tri_pair)
             if (testEdgeTriangleIntersect(edge, tri_pair.mTriangleID1, hit_t))
             {
                 TriangleHitPoint hitPos(edge, hit_t, tri_pair.mTriangleID1);
-                m_TriangleHitPositions.emplace(hitPos.hash(), hitPos);
-                tri_pair.addHitPos(hitPos);
+                tri_pair.addHitPos(hitPos.mHashCode);
+                m_TriangleHitPositions.emplace(hitPos.mHashCode,  std::move(hitPos) );
+                
                 ret = true;
             }
         }
@@ -266,8 +320,9 @@ bool UntangleSolver::testTwoTriangleEdgeCollision(TrianglePair& tri_pair)
             if (testEdgeTriangleIntersect(edge, tri_pair.mTriangleID0, hit_t))
             {
                 TriangleHitPoint hitPos(edge, hit_t, tri_pair.mTriangleID0);
-                m_TriangleHitPositions.emplace(hitPos.hash(), hitPos);
-                tri_pair.addHitPos(hitPos);
+                tri_pair.addHitPos(hitPos.mHashCode);
+                m_TriangleHitPositions.emplace(hitPos.mHashCode, std::move(hitPos));
+                
                 ret = true;
             }
         }
@@ -280,8 +335,8 @@ bool UntangleSolver::testTwoTriangleEdgeCollision(TrianglePair& tri_pair)
         if (testEdgeTriangleIntersect(edge, tri_pair.mTriangleID1, hit_t))
         {
             TriangleHitPoint hitPos(edge, hit_t, tri_pair.mTriangleID1);
-            m_TriangleHitPositions.emplace(hitPos.hash(), hitPos);
-            tri_pair.addHitPos(hitPos);
+            tri_pair.addHitPos(hitPos.mHashCode);
+            m_TriangleHitPositions.emplace(hitPos.mHashCode, std::move(hitPos));
 
             ret = true;
         }
@@ -294,8 +349,9 @@ bool UntangleSolver::testTwoTriangleEdgeCollision(TrianglePair& tri_pair)
             if (testEdgeTriangleIntersect(edge, tri_pair.mTriangleID0, hit_t))
             {
                 TriangleHitPoint hitPos(edge, hit_t, tri_pair.mTriangleID0);
-                m_TriangleHitPositions.emplace(hitPos.hash(), hitPos);
-                tri_pair.addHitPos(hitPos);
+                tri_pair.addHitPos(hitPos.mHashCode);
+                m_TriangleHitPositions.emplace(hitPos.mHashCode, std::move(hitPos));
+                
                 ret = true;
             }
         }
@@ -303,8 +359,8 @@ bool UntangleSolver::testTwoTriangleEdgeCollision(TrianglePair& tri_pair)
         if (ret)
         {
             TriangleHitPoint hitPos(rerangeVertexList[0], tri_pair.mTriangleID0, tri_pair.mTriangleID1);
-            m_TriangleHitPositions.emplace(hitPos.hash(), hitPos);
-            tri_pair.addHitPos(hitPos);
+            tri_pair.addHitPos(hitPos.mHashCode);
+            m_TriangleHitPositions.emplace(hitPos.mHashCode, std::move(hitPos));
         }
     }
     else
@@ -325,201 +381,108 @@ void UntangleSolver::calculateEdgeTriangleIntersection()
     }
 }
 
-void UntangleSolver::groupHitPositionToContour()
+int UntangleSolver::makeUniqueContourID(int graphID, int contourID)
+{
+    const int graphMaxLimit = 10000;
+    assert(m_GrpahToHitPosMap.size() < graphMaxLimit);
+    return graphID * graphMaxLimit + contourID;
+}
+void UntangleSolver::divideGraphToContour(int graphID, const std::set<size_t>& hitPosKeySet)
+{
+    int contourID = -1;
+    for (auto& hpkey : hitPosKeySet)
+    {
+        TriangleHitPoint& hp = m_TriangleHitPositions.at(hpkey);
+        
+        if (hp.mContourID != -1)
+            continue;
+
+        ++contourID;
+        size_t pairHpKey = findPairHitPos(hp);
+        TriangleHitPoint& pairHp = m_TriangleHitPositions.at(pairHpKey);
+
+        int glbalContourID = makeUniqueContourID( graphID, contourID);
+        assert(pairHp.mContourID == -1);
+        setContourIDToAdjacents(hp, glbalContourID);
+        setContourIDToAdjacents(pairHp, glbalContourID);
+    }
+
+    if (contourID > 4)
+    {
+
+    }
+}
+
+void UntangleSolver::setContourIDToPair(TriangleHitPoint& hitpos, int contourID)
+{
+    if (hitpos.mContourID != -1)
+    {
+        assert(hitpos.mContourID == contourID);
+        return;
+    }
+
+    hitpos.mContourID = contourID;
+    m_ContourToHitPosMap[contourID].insert(hitpos.mHashCode);
+
+    size_t pairHpKey = findPairHitPos(hitpos);
+    TriangleHitPoint& pairHp = m_TriangleHitPositions.at(pairHpKey);
+    setContourIDToAdjacents(pairHp, contourID);
+}
+
+void UntangleSolver::setContourIDToAdjacents(TriangleHitPoint& hitpos, int contourID)
+{
+    if (hitpos.mContourID != -1)
+    {
+        assert(hitpos.mContourID == contourID);
+        return;
+    }
+
+    hitpos.mContourID = contourID;
+    m_ContourToHitPosMap[contourID].insert(hitpos.mHashCode);
+
+    if (hitpos.mType == SHARED_VERTEX)
+        return;
+
+    std::set<size_t> twinHps = findTwinsHp(hitpos);
+    for (size_t hpKey : twinHps)
+    {
+        setContourIDToPair(m_TriangleHitPositions.at(hpKey), contourID);
+    }
+}
+
+
+void UntangleSolver::groupHitPositionToGraph()
 {
 	if (!m_isGlobalScheme)
 		return;
-	m_contourCorrect.clear();
-	m_hitPosToGraph.clear();
+
 
     int graphID = -1;
     for (auto& hitPosIter : m_TriangleHitPositions)
     {
         auto& hitPos = hitPosIter.second;
-        auto graphIt = m_hitPosToGraph.find(hitPos.hash());
 
-        if (hitPos.mType == SHARED_VERTEX)
-           continue;
-
-        TriangleHitPoint curEdgeHitPoint = hitPos;
-
-        if (graphIt != m_hitPosToGraph.end())
+        if (hitPos.mGraphID != -1)
             continue;
-
-        TriangleHitPoint pairHitPos = findPairHitPos(hitPos);
 
         //a new graph
         graphID += 1;
-        m_hitPosToGraph.insert({ hitPos.hash(), graphID });
-        m_hitPosToGraph.insert({ pairHitPos.hash(), graphID });
-
-        for (const auto& curhitPos : std::initializer_list<TriangleHitPoint>{ hitPos, pairHitPos })
-        {
-            if (curhitPos.mType == EDGE_POINT)
-            {
-                Edge currentEdge(curhitPos.mTriangleID, curhitPos.mEdgeLocalID);
-                std::list<Edge> adjacentEdges = findAdjacentTriangleEdges(currentEdge);
-                for (const auto& adj_edge : adjacentEdges)
-                {
-                    findContour2(curhitPos.mTriangleID, curhitPos.mHitTriangleID, adj_edge.mTriangleID, curhitPos, graphID);
-                }
-            }
-            else
-            {
-                int cur_src_triangleID = curhitPos.mTriangleID0;
-                int cur_hit_triangleID = curhitPos.mTriangleID1;
-                if (cur_hit_triangleID != curEdgeHitPoint.mHitTriangleID)
-                    std::swap(cur_src_triangleID, cur_hit_triangleID);
-
-                std::vector<int> adjacnetTriangles = findVertexAdjacentTriangle(curhitPos.mVertexID);
-                for (int triID : adjacnetTriangles)
-                {
-                    if (triID == cur_src_triangleID || triID == cur_hit_triangleID)
-                        continue;
-                    TrianglePair tri_pair = TrianglePair(triID, cur_hit_triangleID);
-                    if (m_collisionTrianglePair.find(tri_pair) == m_collisionTrianglePair.end())
-                        continue;
-
-                    findContour2(cur_src_triangleID, cur_hit_triangleID, triID, curhitPos, graphID);
-                }
-            }
-
-        }
-    }
-
-	//int contourId = -1;
-	//for (auto& hitPosIter : m_TriangleHitPositions)
-	//{
-	//	//m_edgeToContour.insert({ edgeTrianglePair, 0 });
+        m_GrpahToHitPosMap.emplace(graphID, std::set<size_t>{});
 
 
-	//	if (it != m_hitPosToContour.end())
-	//		continue;
-
- //       if (hitPos.mType == SHARED_VERTEX)
- //           continue;
-
-	//	contourId += 1;
-	//	m_hitPosToContour.insert({ hitPos.hash(), contourId });
-	//	findContour(edgeTrianglePair.mEdge.mTriangleID, edgeTrianglePair.mTriangleID, edgeTrianglePair.mEdge, contourId);
-
-	//	//search in other direction
-	//	Edge adjacentEdge = findAdjacentTriangleEdge(edgeTrianglePair.mEdge);
-	//	EdgeTrianglePair adjacentEdgeTrianglePair = EdgeTrianglePair(adjacentEdge, edgeTrianglePair.mTriangleID, edgeTrianglePair.mHit_t);
-	//	if (adjacentEdge.isValid() &&
-	//		m_hitPosToContour.find(adjacentEdgeTrianglePair) == m_hitPosToContour.end())
-	//	{
-	//		m_hitPosToContour.insert({ adjacentEdgeTrianglePair, contourId });
-	//		findContour(adjacentEdge.mTriangleID, adjacentEdgeTrianglePair.mTriangleID, adjacentEdge, contourId);
-	//	}
-	//}
-
-    std::cout << "Debug: find contour graph  " << graphID+1 << std::endl;
-}
-void UntangleSolver::calculateEdgeCorrectVector()
-{
-	m_contourToVertexMap.clear();
-    m_edgeCorrects.clear();
-    for( const auto& hitPosIter : m_TriangleHitPositions )
-    {
-        const auto& hitPos = hitPosIter.second;
-        if (hitPos.mType == SHARED_VERTEX)
-            continue;
-
-        Edge edge(hitPos.mTriangleID, hitPos.mEdgeLocalID);
-        int triangleID = hitPos.mHitTriangleID;
-        Vec3 gvector = calculateGVector( edge,triangleID );
+        size_t pairHitPosKey = findPairHitPos(hitPos);
+        TriangleHitPoint& pairHp = m_TriangleHitPositions.at(pairHitPosKey);
         
-		if (m_isGlobalScheme)
-		{
-			int contourID = m_hitPosToGraph.at(hitPosIter.first);
-			addContourCorrectVector(contourID, Edge(edge.mTriangleID, 0), gvector);
-			addContourCorrectVector(contourID, Edge(edge.mTriangleID, 1), gvector);
-			addContourCorrectVector(contourID, Edge(edge.mTriangleID, 2), gvector);
+        hitPos.mPairHashcode = pairHp.mHashCode;
+        pairHp.mPairHashcode = hitPos.mHashCode;
 
-			Vec3 gvector_for_triangle = -gvector;
-			addContourCorrectVector(-1 -contourID, Edge(triangleID,0), gvector_for_triangle);
-			addContourCorrectVector(-1 - contourID, Edge(triangleID,1), gvector_for_triangle);
-			addContourCorrectVector(-1 - contourID, Edge(triangleID,2), gvector_for_triangle);
-		}
-		else
-		{
-			addEdgeCorrectVector(Edge(edge.mTriangleID, 0), gvector);
-			addEdgeCorrectVector(Edge(edge.mTriangleID, 1), gvector);
-			addEdgeCorrectVector(Edge(edge.mTriangleID, 2), gvector);
-
-
-			Vec3 gvector_for_triangle = -gvector;
-			addEdgeCorrectVector( Edge(triangleID,0), gvector_for_triangle);
-			addEdgeCorrectVector( Edge(triangleID,1), gvector_for_triangle);
-			addEdgeCorrectVector( Edge(triangleID,2), gvector_for_triangle);
-		}
+        setGraphIDTOAdjacent(pairHp, graphID);
+        setGraphIDTOAdjacent(hitPos, graphID);
     }
 }
 
-void UntangleSolver::correctParticles()
-{
-	if (m_isGlobalScheme)
-	{
-		for (const auto& contourCorrect : m_contourToVertexMap)
-		{
-			int contourId = contourCorrect.first;
-			Vec3 direction = m_contourCorrect[contourId].getOffset();
-			if (glm::length(direction) < 1e-7)
-				continue;
-			direction = glm::normalize(direction);
 
-			for (int vertexId : contourCorrect.second)
-			{
-				m_particles[vertexId].mCurPosition += direction * m_particles[vertexId].mInvMass;
-			}
 
-		}
-	}
-	else
-	{
-		for (const auto& edgeCorrect : m_edgeCorrects)
-		{
-			int p0 = edgeCorrect.first.mP0;
-			int p1 = edgeCorrect.first.mP1;
-
-			Vec3 direction = edgeCorrect.second.getOffset();
-			direction = glm::normalize(direction);
-
-			m_particles[p0].mCurPosition += direction * m_particles[p0].mInvMass;
-			m_particles[p1].mCurPosition += direction * m_particles[p1].mInvMass;
-		}
-	}
-}
-
-void UntangleSolver::addEdgeCorrectVector( const Edge& edge , const Vec3 correctVector)
-{
-    auto it = m_edgeCorrects.find( edge );
-    if( it == m_edgeCorrects.end() )
-    {
-        it = m_edgeCorrects.insert( std::make_pair(edge, EdgeCorrect() )).first;
-    }
-
-    it->second.addOffset( correctVector );
-}
-
-void UntangleSolver::addContourCorrectVector(int contourId, const Edge& edge, const Vec3 correctVector)
-{
-	auto it1 = m_contourToVertexMap.find(contourId);
-	if (it1 == m_contourToVertexMap.end())
-	{
-		it1 = m_contourToVertexMap.insert({ contourId, std::set<int>() }).first;
-	}
-	it1->second.insert(edge.mP0);
-	it1->second.insert(edge.mP1);
-
-	auto it = m_contourCorrect.find(contourId);
-	if (it == m_contourCorrect.end())
-	{
-		it = m_contourCorrect.insert(std::make_pair(contourId, EdgeCorrect())).first;
-	}
-	it->second.addOffset(correctVector);
-}
 
 Edge::Edge( int triangleID , int edgeLocalID )
 {
@@ -587,26 +550,7 @@ TriangleIntersectType UntangleSolver::testTriangleIntersect(int triangleID0, int
     Triangle& t1 = m_triangles[triangleID0];
     Triangle& t2 = m_triangles[triangleID1];
 
-    if (triangleID0 == 853 && triangleID1 == 1636)
-    {
-        //generateDebugCode(m_particles[t1.p0].mCurPosition, 
-        //                    m_particles[t1.p1].mCurPosition, 
-        //                    m_particles[t1.p2].mCurPosition,
-        //                    m_particles[t2.p0].mCurPosition, 
-        //                    m_particles[t2.p1].mCurPosition, 
-        //                    m_particles[t2.p2].mCurPosition);
-
-        bool ret = GeometryMath::isTriangleIntersect(
-            Vec3(0.028800, -0.430300, 0.122500),
-            Vec3(0.006091, -0.434383, 0.103956),
-            Vec3(0.023555, -0.479317, 0.114574),
-            Vec3(0.012833, -0.474400, 0.106400),
-            Vec3(0.022169, -0.416075, 0.105390),
-            Vec3(0.006433, -0.457500, 0.122400)
-        );
-        std::cout << ret << std::endl;
-
-    }
+    
 	int shareVertex = getShareVertexCount(triangleID0, triangleID1);
     if (shareVertex == 0)
     {
@@ -702,22 +646,334 @@ Vec3 UntangleSolver::calculateGVector(const Edge& edge, int triangleID)
 
 }
 
-TriangleHitPoint UntangleSolver::findPairHitPos(const TriangleHitPoint& hitPos)
+size_t UntangleSolver::findPairHitPos(const TriangleHitPoint& curHp)
 {
-    auto tri_pair_ids = hitPos.getTwoTriangles();
+    auto tri_pair_ids = curHp.getTwoTriangles();
     TrianglePair tri_pir(tri_pair_ids.first, tri_pair_ids.second);
     auto itor = m_collisionTrianglePair.find(tri_pir);
     assert(itor != m_collisionTrianglePair.end());
     assert(itor->mHitPos.size() == 2);
-    for (const auto& curHitPos : itor->mHitPos)
+    for (const auto& hpKey : itor->mHitPos)
     {
-        if (curHitPos.hash() == hitPos.hash() )
-            continue;
-        return curHitPos;
+        if (curHp.mHashCode != hpKey)
+            return hpKey;
     }
     //should not arrive here
     assert(false);
-    return hitPos;
+    return -1;
+}
+
+void UntangleSolver::setGraphIDToPair(TriangleHitPoint& src_hitPos, int graphID)
+{
+    if (src_hitPos.mGraphID != -1)
+        return;
+    src_hitPos.mGraphID = graphID;
+    m_GrpahToHitPosMap[graphID].insert(src_hitPos.mHashCode);
+
+    size_t pairHitPosKey = findPairHitPos(src_hitPos);
+    TriangleHitPoint& pairHp = m_TriangleHitPositions.at(pairHitPosKey);
+
+    pairHp.mPairHashcode = src_hitPos.mHashCode;
+    src_hitPos.mPairHashcode = pairHp.mHashCode;
+
+    setGraphIDTOAdjacent(pairHp, graphID);
+
+
+
+}
+
+void UntangleSolver::debugTriangleIntersection(int tri0, int tri1)
+{
+    auto q0 = m_particles[m_triangles[tri0].p0].mCurPosition;
+    auto q1 = m_particles[m_triangles[tri0].p1].mCurPosition;
+    auto q2 = m_particles[m_triangles[tri0].p2].mCurPosition;
+
+    auto p0 = m_particles[m_triangles[tri1].p0].mCurPosition;
+    auto p1 = m_particles[m_triangles[tri1].p1].mCurPosition;
+    auto p2 = m_particles[m_triangles[tri1].p2].mCurPosition;
+
+    generateMayaScriptForTriangle(q0, q1, q2, p0, p1, p2);
+
+    testTriangleIntersect(tri0, tri1);
+}
+
+std::set<size_t> UntangleSolver::findTwinsHp(const TriangleHitPoint& src_hitPos)
+{
+    std::set<size_t> twinHps;
+    if (src_hitPos.mType == EDGE_POINT)
+    {
+        Edge currentEdge(src_hitPos.mTriangleID, src_hitPos.mEdgeLocalID);
+        std::list<Edge> adjacentEdges = findAdjacentTriangleEdges(currentEdge);
+
+        for (const auto& adj_edge : adjacentEdges)
+        {
+            TrianglePair tri_pair(adj_edge.mTriangleID, src_hitPos.mHitTriangleID);
+            auto itor = m_collisionTrianglePair.find(tri_pair);
+            
+            //assert(itor != m_collisionTrianglePair.end());
+            if (itor == m_collisionTrianglePair.end())
+            {
+                debugTriangleIntersection(adj_edge.mTriangleID, src_hitPos.mHitTriangleID);
+                assert(false);
+            }
+            
+            
+            const TrianglePair& adjTirPair = *itor;
+            int matchIndex = -1;
+            for (int i = 0, n = (int)adjTirPair.mHitPos.size(); i < n; ++i)
+            {
+                const auto& hitPosKey = adjTirPair.mHitPos.at(i);
+                const auto& hitPos = m_TriangleHitPositions.at(hitPosKey);
+                if (hitPosKey == src_hitPos.mHashCode)
+                    continue; //skip itself
+
+                if (isHitPosMatch(src_hitPos, hitPos))
+                {
+                    twinHps.insert(hitPosKey);
+                    break;
+                }
+            }
+        }
+    }
+    else
+    {
+        std::vector<int> adjacnetTriangles = findVertexAdjacentTriangle(src_hitPos.mVertexID);
+        for (int i = 0; i < (int)adjacnetTriangles.size(); ++i)
+        {
+            for (int j = i + 1; j < (int)adjacnetTriangles.size(); ++j)
+            {
+                TrianglePair tri_pair(adjacnetTriangles[i], adjacnetTriangles[j]);
+                auto itor = m_collisionTrianglePair.find(tri_pair);
+                if (itor == m_collisionTrianglePair.end())
+                    continue;
+                const TrianglePair& adjTirPair = *itor;
+
+                int matchIndex = -1;
+                for (int i = 0, n = (int)adjTirPair.mHitPos.size(); i < n; ++i)
+                {
+                    const auto& hitPosKey = adjTirPair.mHitPos.at(i);
+                    const auto& hitPos = m_TriangleHitPositions.at(hitPosKey);
+                    if (isHitPosMatch(src_hitPos, hitPos))
+                    {
+                        twinHps.insert(hitPosKey);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    return twinHps;
+}
+
+void UntangleSolver::setGraphIDTOAdjacent(TriangleHitPoint& src_hitPos, int graphID)
+{
+    if (src_hitPos.mGraphID != -1)
+        //ring path
+        return;
+
+    src_hitPos.mGraphID = graphID;
+    m_GrpahToHitPosMap[graphID].insert(src_hitPos.mHashCode);
+
+    std::set<size_t> twinHps = findTwinsHp(src_hitPos);
+    for (size_t hpKey : twinHps)
+    {
+        setGraphIDToPair(m_TriangleHitPositions.at(hpKey), graphID);
+    }
+
+    twinHps.insert(src_hitPos.mHashCode);
+
+    size_t familyKey = 0;
+    for (auto key : twinHps)
+    {
+        boost::hash_combine(familyKey, key);
+    }
+
+    for (auto key : twinHps)
+    {
+        TriangleHitPoint& hp = m_TriangleHitPositions.at(key);
+        hp.mFaimilyHashCode = familyKey;
+    }
+    m_familtyHpMaps.emplace(familyKey, std::move(twinHps));
+}
+
+void UntangleSolver::minimizeLocalContour()
+{
+    const float h0 = 0.006;
+    const float g0 = 0.006;
+    for (auto& hitPosIter : m_TriangleHitPositions)
+    {
+        TriangleHitPoint& hitPos = hitPosIter.second;
+
+        if (hitPos.mType == EDGE_POINT)
+        {
+            Vec3 G = calculateGVector(Edge(hitPos.mTriangleID, hitPos.mEdgeLocalID), hitPos.mHitTriangleID);
+            Vec3 offset = G * h0 / sqrt(glm::length2(offset) + g0 * g0);
+
+            Triangle tri0 = m_triangles[hitPos.mTriangleID];
+            Triangle tri1 = m_triangles[hitPos.mHitTriangleID];
+
+            for (auto vertex_offset_iter :
+                std::initializer_list<std::pair<int, Vec3>>{
+                    {tri0.p0,offset},{tri0.p1,offset},{tri0.p2,offset},
+                    {tri1.p0,-offset},{tri1.p1,-offset},{tri1.p2,-offset} })
+            {
+                int vid = vertex_offset_iter.first;
+                m_vertexAccumOffset[vid] += vertex_offset_iter.second * m_particles[vid].mInvMass;
+            }
+        }
+        else {  /*skip share vertex case*/ }
+    }
+}
+
+void UntangleSolver::minimizeGlobalContour(const std::set<size_t>& hpSets)
+{
+    size_t currentkey = -1;
+    for (auto& key : hpSets)
+    {
+        if (m_TriangleHitPositions.at(key).mType != SHARED_VERTEX)
+        {
+            currentkey = key;
+            break;
+        }
+    }
+
+    assert(currentkey != -1);
+
+    std::set<size_t> groupA;
+    std::set<size_t> groupB;
+
+    TriangleHitPoint& curHp = m_TriangleHitPositions.at(currentkey);
+    size_t pairHitPosKey = findPairHitPos(curHp);
+    TriangleHitPoint& pairHp = m_TriangleHitPositions.at(pairHitPosKey);
+
+    setGroupToAdjacent(curHp, groupA, groupB);
+
+    if (pairHp.mType != SHARED_VERTEX)
+    {
+        if (pairHp.mHitTriangleID == curHp.mHitTriangleID)
+        {
+            setGroupToAdjacent(pairHp, groupA, groupB);
+        }
+        else
+        {
+            setGroupToAdjacent(pairHp, groupB, groupA);
+        }
+    }
+
+
+
+    Vec3 sum_A(0);
+    Vec3 sum_B(0);
+
+    for (auto& key : groupA)
+    {
+        const TriangleHitPoint& curHp = m_TriangleHitPositions.at(key);
+        Vec3 G = calculateGVector(Edge(curHp.mTriangleID, curHp.mEdgeLocalID), curHp.mHitTriangleID);
+
+        sum_A = sum_A + G;
+    }
+
+    for (auto& key : groupB)
+    {
+        const TriangleHitPoint& curHp = m_TriangleHitPositions.at(key);
+        Vec3 G = calculateGVector(Edge(curHp.mTriangleID, curHp.mEdgeLocalID), curHp.mHitTriangleID);
+        sum_B = sum_B + G;
+    }
+
+    std::vector<int> vertexFlags;
+    vertexFlags.resize(m_particles.size());
+    
+    for (auto& iter :
+        std::initializer_list<std::pair<Vec3, std::set<size_t>& >>{ {sum_A, groupA },{sum_B, groupB} })
+    {
+        m_vertexUpdateFlags.assign(m_particles.size(), 0);
+        for (auto& key : iter.second )
+        {
+            Vec3 offset =  iter.first;
+            if (glm::length(offset) < 1e-7)
+                continue;
+            //offset = glm::normalize(offset);
+
+            const TriangleHitPoint& curHp = m_TriangleHitPositions.at(key);
+
+            Triangle tri0 = m_triangles[curHp.mTriangleID];
+            Triangle tri1 = m_triangles[curHp.mHitTriangleID];
+
+            for (auto vertex_offset_iter :
+                std::initializer_list<std::pair<int, Vec3>>{
+                    {tri0.p0,offset},{tri0.p1,offset},{tri0.p2,offset},
+                    {tri1.p0,-offset},{tri1.p1,-offset},{tri1.p2,-offset} })
+            {
+                int vid = vertex_offset_iter.first;
+                if (m_vertexUpdateFlags[vid] == 0)
+                {
+                    m_vertexUpdateFlags[vid] = 1;
+                    if (m_particles[vid].mInvMass > 0)
+                    {
+                        m_vertexAccumOffset[vid] += vertex_offset_iter.second * m_particles[vid].mInvMass;
+                    }
+
+                }
+            }
+        }
+    }
+}
+
+void  UntangleSolver::applyOffsetToParticle()
+{
+    for (size_t i = 0; i < m_particles.size(); ++i)
+    {
+        Vec3 offset = m_vertexAccumOffset[i];
+
+        if (glm::length(offset) < 1e-7)
+            continue;
+
+        const float h0 = 0.01f;
+        const float g0 = 0.06f;
+
+        offset =  offset*h0 / sqrt(glm::length2(offset) + g0 * g0);
+        m_particles[i].mCurPosition += offset;
+    }
+}
+
+void UntangleSolver::setGroupToPair(TriangleHitPoint& hitPos, std::set<size_t>& edgeSideGroup, std::set<size_t>& triSideGroup)
+{
+    if (hitPos.mSetGroupFlag)
+        return;
+
+    edgeSideGroup.insert(hitPos.mHashCode);
+    hitPos.mSetGroupFlag = true;
+
+    size_t pairHpKey = findPairHitPos(hitPos);
+    TriangleHitPoint& pairHp = m_TriangleHitPositions.at(pairHpKey);
+
+    if (pairHp.mType == SHARED_VERTEX)
+        return;
+
+    if (pairHp.mHitTriangleID == hitPos.mHitTriangleID)
+    {
+        setGroupToAdjacent(pairHp, edgeSideGroup, triSideGroup);
+    }
+    else
+    {
+        setGroupToAdjacent(pairHp, triSideGroup, edgeSideGroup);
+    }
+}
+
+void UntangleSolver::setGroupToAdjacent(TriangleHitPoint& hitPos, std::set<size_t>& edgeSideGroup, std::set<size_t>& triSideGroup)
+{
+    if (hitPos.mSetGroupFlag)
+        return;
+
+    edgeSideGroup.insert(hitPos.mHashCode);
+    hitPos.mSetGroupFlag = true;
+
+    std::set<size_t> twinHps = findTwinsHp(hitPos);
+    for (size_t hpKey : twinHps)
+    {
+        TriangleHitPoint& adjHp = m_TriangleHitPositions.at(hpKey);
+        setGroupToPair(adjHp, edgeSideGroup, triSideGroup);
+    }
 }
 
 void UntangleSolver::findContour2(int src_triangleID, int hit_triangleID, int target_triangleID, const TriangleHitPoint& src_hitPos, int graphID)
@@ -731,7 +987,8 @@ void UntangleSolver::findContour2(int src_triangleID, int hit_triangleID, int ta
     int matchIndex = -1;
     for (int i = 0, n = (int) collisionTrianglePair.mHitPos.size(); i <n; ++i)
     {
-        const auto& hitPos = collisionTrianglePair.mHitPos.at(i);
+        const auto& hitPosKey = collisionTrianglePair.mHitPos.at(i);
+        const auto& hitPos = m_TriangleHitPositions.at(hitPosKey);
         if (isHitPosMatch(src_hitPos,  hitPos))
         {
             matchIndex = i;
@@ -739,15 +996,23 @@ void UntangleSolver::findContour2(int src_triangleID, int hit_triangleID, int ta
     }
 
     assert(matchIndex == 0 || matchIndex == 1);
-    TriangleHitPoint curHitPos = collisionTrianglePair.mHitPos[matchIndex];
-    TriangleHitPoint curPairHitPos = collisionTrianglePair.mHitPos[2-1-matchIndex];
+    size_t curHitPosKey = collisionTrianglePair.mHitPos[matchIndex];
+    size_t curPairHitPosKey = collisionTrianglePair.mHitPos[1 - matchIndex];
 
-    if (m_hitPosToGraph.find(curHitPos.hash()) != m_hitPosToGraph.end())
+    TriangleHitPoint& curHitPos = m_TriangleHitPositions.at(curHitPosKey);
+    TriangleHitPoint& curPairHitPos = m_TriangleHitPositions.at(curPairHitPosKey);
+
+    if (curHitPos.mGraphID != -1)
         return;
+    assert(curPairHitPos.mGraphID == -1);
+    curHitPos.mPairHashcode = curPairHitPosKey;
+    curPairHitPos.mPairHashcode = curHitPosKey;
 
-    assert(m_hitPosToGraph.find(curPairHitPos.hash()) == m_hitPosToGraph.end());
-    m_hitPosToGraph.emplace(curHitPos.hash(), graphID);
-    m_hitPosToGraph.emplace(curPairHitPos.hash(), graphID);
+    curHitPos.mGraphID = graphID;
+    curPairHitPos.mGraphID = graphID;
+
+    m_GrpahToHitPosMap[graphID].insert(curHitPosKey);
+    m_GrpahToHitPosMap[graphID].insert(curPairHitPosKey);
 
     if (curPairHitPos.mType == EDGE_POINT)
     {
@@ -799,72 +1064,4 @@ bool UntangleSolver::isHitPosMatch(const TriangleHitPoint& hitPos1, const Triang
     {
         return hitPos1.mVertexID == hitPos2.mVertexID;
     }
-}
-
-
-void UntangleSolver::findContour(int edgeTraignleID, int triangleID, Edge currentHitedge, int contourId)
-{/*
-	auto it = m_collisionTrianglePair.find({ edgeTraignleID, triangleID });
-
-    assert(it != m_collisionTrianglePair.end());
-
-	assert(it->mHitPos.size() == 2);
-
-	int currentHitIdx = 0;
-	if (it->mHitPos[0].mTriangleID == currentHitedge.mTriangleID && it->mHitPos[0].mEdgeLocalID == currentHitedge.mEdgeLocalID )
-	{
-		currentHitIdx = 0;
-	}
-	else if( it->mHitPos[1].mTriangleID == currentHitedge.mTriangleID && it->mHitPos[1].mEdgeLocalID == currentHitedge.mEdgeLocalID)
-	{
-		currentHitIdx = 1;
-	}
-	else
-	{
-		assert(false);
-	}
-
-	int theOtherHitIdx = 1 - currentHitIdx;
-
- 	if (it->mHitPos[theOtherHitIdx].mTriangleID == edgeTraignleID )
-	{
-		//two hit points on the same triangle
-		Edge adjacentTriangleEdge;
-		Edge hitEdge = Edge(edgeTraignleID, it->mHitPos[theOtherHitIdx].mEdgeLocalID);
-		EdgeTrianglePair edgeTraignlePair = EdgeTrianglePair(hitEdge, triangleID, it->mHitPos[theOtherHitIdx].m_t);
-		bool isInserted = m_hitPosToContour.insert({ edgeTraignlePair, contourId }).second;
-		if (!isInserted)
-		{
-			assert(m_hitPosToContour[edgeTraignlePair] == contourId);
-			return;
-		}
-
-		//replace EdgeTriangle 
-		adjacentTriangleEdge = findAdjacentTriangleEdge(hitEdge);
-		if (!adjacentTriangleEdge.isValid())
-			return;
-		edgeTraignlePair = EdgeTrianglePair(adjacentTriangleEdge, triangleID, it->mHitPos[theOtherHitIdx].m_t);
-		isInserted = m_hitPosToContour.insert({ edgeTraignlePair, contourId }).second;
-		if (!isInserted)
-		{
-			//find a ring
-			assert(m_hitPosToContour[edgeTraignlePair] == contourId);
-			return;
-		}
-		else
-		{
-			findContour(adjacentTriangleEdge.mTriangleID, triangleID, adjacentTriangleEdge, contourId);
-		}
-	}
-	else
-	{
-		Edge theOtherHitEdge = Edge(it->mHitPos[theOtherHitIdx].mTriangleID, it->mHitPos[theOtherHitIdx].mEdgeLocalID);
-
-		Edge adjacentTriangle = findAdjacentTriangleEdge(theOtherHitEdge);
-		if (!adjacentTriangle.isValid())
-			return;
-
-		findContour(edgeTraignleID, adjacentTriangle.mTriangleID, adjacentTriangle, contourId);
-	}
-    */
 }
