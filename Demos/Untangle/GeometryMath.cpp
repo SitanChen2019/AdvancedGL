@@ -165,8 +165,8 @@ namespace GeometryMath {
         glm::vec3 e0t0 = glm::cross(e0, t0);
         glm::vec3 e1t0 = glm::cross(e1, t0);
  
-        if (glm::dot(e0t0, n) > 0
-            && glm::dot(e1t0, n) < 0)
+        if (glm::dot(e0t0, n) >= 0
+            && glm::dot(e1t0, n) <= 0)
         {
             return true;
         }
