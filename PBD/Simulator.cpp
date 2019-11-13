@@ -1,5 +1,6 @@
 #include "Simulator.h"
 #include "Particle.h"
+#include "Constraints.h
 
 namespace PBD
 {
@@ -66,7 +67,7 @@ namespace PBD
         
 
         //project constraint
-        
+        projectConstraint();
 
         //update velocity
         for (unsigned i = 0, n = (unsigned)mParticles.size(); i < n; ++i)
@@ -90,5 +91,22 @@ namespace PBD
         assert(particle.mInvMass != 0);
         return  mSetting.GRAVITY/ particle.mInvMass;
     }
-    
+
+    void Simualtor::projectConstraint()
+    {
+        for( auto& constraint : mConstraints)
+        {
+            constraint.solve( this );
+        }
+    }
+
+     void Simualtor::solveConstraint(const DistanceConstraint& disCons)
+     {
+         
+     }
+
+
+
+
+
 }

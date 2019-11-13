@@ -4,6 +4,8 @@
 
 
 namespace PBD {
+    class Simulator;
+
     class EXPORT_SYMBOL DistanceConstraint
     {
     public:
@@ -38,6 +40,8 @@ namespace PBD {
             mType = ConstraintType::CT_DISTANCE_CONSTRAINT;
             mDistanceCons = dc;
         }
+
+        void solve( Simulator* pSimulator);
     };
 
 }
