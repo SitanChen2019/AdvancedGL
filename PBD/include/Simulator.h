@@ -40,6 +40,9 @@ namespace PBD
         Simualtor();
         _worker glm::vec3  getExtForce( const Particle& );
 
+        void projectConstraint();
+
+        void solveConstraint(const DistanceConstraint& disCons);
     private:
         SimSettings mSetting;
 
