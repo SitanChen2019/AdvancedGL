@@ -35,6 +35,7 @@ namespace PBD
         {
             return mTriangles;
         }
+        void solveConstraint(const DistanceConstraint& disCons);
 
     private:
         Simualtor();
@@ -42,7 +43,7 @@ namespace PBD
 
         void projectConstraint();
 
-        void solveConstraint(const DistanceConstraint& disCons);
+
     private:
         SimSettings mSetting;
 

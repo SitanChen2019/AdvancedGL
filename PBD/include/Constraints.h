@@ -4,7 +4,7 @@
 
 
 namespace PBD {
-    class Simulator;
+    class Simualtor;
 
     class EXPORT_SYMBOL DistanceConstraint
     {
@@ -41,7 +41,7 @@ namespace PBD {
             mDistanceCons = dc;
         }
 
-        void solve( Simulator* pSimulator);
+        void solve( Simualtor* pSimulator);
     };
 
 }

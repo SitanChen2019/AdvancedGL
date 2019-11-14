@@ -88,7 +88,8 @@ struct TriangleHitPoint
     TriangleHitPoint(const TriangleHitPoint&& other)
         :mType( other.mType)
     {
-        memcpy_s(this, sizeof(TriangleHitPoint), &other, sizeof(TriangleHitPoint));
+        //memcpy_s(this, sizeof(TriangleHitPoint), &other, sizeof(TriangleHitPoint));
+        memcpy(this, &other, sizeof(TriangleHitPoint));
     }
 
     const TriangleHitPointType mType;

@@ -1,5 +1,5 @@
 #ifndef PDB_SIM_SETTING_H
-#define PBD_SIM_SETTING_H
+#define PDB_SIM_SETTING_H
 
 #include <glm/glm.hpp>
 
