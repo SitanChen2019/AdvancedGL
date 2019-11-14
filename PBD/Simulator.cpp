@@ -1,6 +1,7 @@
 #include "Simulator.h"
 #include "Particle.h"
-#include "Constraints.h
+#include "Constraints.h"
+#include <glm/glm.hpp>
 
 namespace PBD
 {
@@ -102,7 +103,27 @@ namespace PBD
 
      void Simualtor::solveConstraint(const DistanceConstraint& disCons)
      {
+         auto& p0 = mParticles[disCons.mId0].mCurPos;
+         auto& p1 = mParticles[disCons.mId1].mCurPos;
          
+         float w0 = mParticles[disCons.mId0].mInvMass;
+         float w1 = mParticles[disCons.mId1].mInvMass;
+         
+         if( (w0+w1) == 0)
+             return;
+         
+         float c = glm::distance( p0, p1) - disCons.mDistance;
+         auto dp0 = glm::normalize(p1-p0);
+         auto dp1 = - dp0;
+         
+         float lamda = -c/(w0+w1);
+         
+         auto delat_p0 = lamda * w0 * dp0;
+         auto delat_p1 = lamda * w1 * dp1;
+         
+         mParticles[disCons.mId0].mCurPos += delat_p0;
+         mParticles[disCons.mId1].mCurPos += delat_p1;
+
      }
 
 

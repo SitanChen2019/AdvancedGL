@@ -2,7 +2,8 @@
 #include "Simulator.h"
 
 namespace PBD{
-        void Constraint::solve( Simulator* pSimulator)
+
+        void Constraint::solve( Simualtor* pSimulator)
         {
             if( mType == ConstraintType::CT_DISTANCE_CONSTRAINT )
             {

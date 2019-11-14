@@ -282,12 +282,19 @@ void TrianglulationDemo::fillInputData1(triangulateio& input_data)
 
 	input_data.numberofpoints = (int)vertices.size();
 	input_data.pointlist = new float[vertices.size() * 2];
-	memcpy_s(input_data.pointlist, vertices.size() * 2 * sizeof(float), vertices.data(), vertices.size() * sizeof(Vec2));
 
+    for( int i = 0; i < vertices.size(); ++i)
+    {
+        input_data.pointlist[2*i] = vertices[i].x;
+        input_data.pointlist[2*i+1] = vertices[i].x;
+    }
 
 	input_data.numberofsegments = (int)segments.size() / 2;
 	input_data.segmentlist = new int[segments.size()];
-	memcpy_s(input_data.segmentlist, sizeof(int) * segments.size(), segments.data(), segments.size() * sizeof(int));
+	for( int i = 0 ; i< segments.size(); ++i)
+    {
+        input_data.segmentlist[i]  = segments[i];
+    }
 
 	return;
 }
