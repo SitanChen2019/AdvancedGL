@@ -8,7 +8,13 @@
 
 AABB::AABB()
 {
+    m_maxPt.x = -FLT_MAX;
+    m_maxPt.y = -FLT_MAX;
+    m_maxPt.z = -FLT_MAX;
 
+    m_minPt.x = FLT_MAX;
+    m_minPt.y = FLT_MAX;
+    m_minPt.z = FLT_MAX;
 }
 
 
@@ -18,13 +24,13 @@ AABB::~AABB()
 
 AABB::AABB(const Vec3 p1, const Vec3 p2)
 {
-    m_maxPt.x = std::max(p1.x, p2.x);
-    m_maxPt.y = std::max(p1.y, p2.y);
-    m_maxPt.z = std::max(p1.z, p2.z);
+    //m_maxPt.x = std::max(p1.x, p2.x);
+    //m_maxPt.y = std::max(p1.y, p2.y);
+    //m_maxPt.z = std::max(p1.z, p2.z);
 
-    m_minPt.x = std::min(p1.x, p2.x);
-    m_minPt.y = std::min(p1.y, p2.y);
-    m_minPt.z = std::min(p1.z, p2.z);
+    //m_minPt.x = std::min(p1.x, p2.x);
+    //m_minPt.y = std::min(p1.y, p2.y);
+    //m_minPt.z = std::min(p1.z, p2.z);
 }
 
 AABB::AABB(const Vec3Sequence& vertices)

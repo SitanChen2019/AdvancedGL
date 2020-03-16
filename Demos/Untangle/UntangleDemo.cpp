@@ -18,6 +18,19 @@ void UntangleDemo::loadModel( std::string modelName )
 	for (int i = 0; i < tessellationDatas.size(); ++i)
 		optimizeMesh(tessellationDatas[i]);
 
+    Vec3 p[6] = {
+                Vec3(0.055987, 1.353311, 0.101129),
+                Vec3(0.078218, 1.352396, 0.101684),
+                Vec3(0.073629, 1.361798, 0.077059),
+                Vec3(0.076033, 1.358053, 0.088566),
+                Vec3(0.074344, 1.354258, 0.091342),
+                Vec3(0.077621, 1.355455, 0.089985)
+    };
+    for (int i = 0; i < 6; ++i)
+    {
+        tessellationDatas[i / 3].vertices[i % 3] = p[i];
+    }
+
     m_meshInvMass.clear();
     m_meshInvMass.resize(tessellationDatas.size(), 0.1f);
 	//init solover
@@ -36,6 +49,7 @@ void UntangleDemo::loadModel( std::string modelName )
 		m_meshes.push_back(pRenderable1);
 
 		m_box.merge(meshdata.vertices);
+  
 	}
 
 	std::cout << "Mesh Count: " << tessellationDatas.size() << std::endl;
@@ -45,8 +59,20 @@ void UntangleDemo::loadModel( std::string modelName )
         m_meshes.at(1)->setDiffuse(Vec3(0.8, 0.8, 0));
 	Global::cameraControl().fitBox(m_box);
 
-	m_tessellationDatas.swap(tessellationDatas);
+    Matrix4  viewProjMat = Global::renderWindow().getProjViewMatrix();
 
+
+	m_tessellationDatas.swap(tessellationDatas);
+    for (auto& meshdata : m_tessellationDatas)
+    {
+        for (auto v : meshdata.vertices)
+        {
+            glm::vec4 v4 = glm::vec4(v.x, v.y, v.z, 1);
+            auto result = viewProjMat * v4;
+            result /= result.w;
+            std::cout << result.x << " " << result.y << " " << result.z << " " << std::endl;
+        }
+    }
     m_autoRun = false;
 }
 
@@ -167,7 +193,7 @@ bool UntangleDemo::init()
 	m_pUI = new UntangleDemoView(this);
 	Global::uiManager().addUIView(m_pUI);
 
-	loadModel(Global::DemoPath("/Untangle/res/a.obj"));
+	loadModel(Global::DemoPath("/Untangle/res/n.obj"));
 	return true;
 }
 

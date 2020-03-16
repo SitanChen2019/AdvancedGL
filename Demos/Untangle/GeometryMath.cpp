@@ -503,8 +503,9 @@ namespace GeometryMath {
     bool isTriangleIntersect( Vec3 p00, Vec3 p01, Vec3 p02,
                               Vec3 p10, Vec3 p11, Vec3 p12)
     {
-        Triangle t0(p00, p01, p02);
-        Triangle t1(p10, p11, p12);
+        float mulitply = 1.f;
+        Triangle t0(p00*mulitply, p01*mulitply, p02*mulitply);
+        Triangle t1(p10*mulitply, p11*mulitply, p12*mulitply);
         return t0.intersect_traingle(t1);
     }
 
@@ -527,6 +528,746 @@ namespace GeometryMath {
         return  t.intersect_segment(p00, p01, hit_t);;
     }
 
+    bool is_point_in_triangle(const Vec3& p0, const Vec3& p1, const Vec3& p2, const Vec3& q)
+    {
+        Vec3 normal = cross(p1 - p0, p2 - p0);
+        normal = normalize(normal);
+
+        if (dot(cross(p1 - q, p2 - q), normal) < 0)
+            return false;
+        if (dot(cross(p2 - q, p0 - q), normal) < 0)
+            return false;
+        if (dot(cross(p0 - q, p1 - q), normal) < 0)
+            return false;
+        return true;
+    }
+
+    bool test_edge_triangle_intersection(const Vec3& p0, const Vec3& p1, const Vec3& p2,
+        const Vec3& q1, const Vec3& q2, float* t)
+    {
+
+        Vec3 r0 = q1 - p0;
+        Vec3 r1 = q2 - p0;
+
+        Vec3 e0 = p1 - p0;
+        Vec3 e1 = p2 - p0;
+        Vec3 n = cross(e0, e1);
+        n = normalize(n);
+
+        float D0 = dot(r0, n);
+        float D1 = dot(r1, n);
+
+        //D0 and D1 must be have different signal to ensure there is a hit point on the plane
+        if (D0 * D1 > 0)
+            return false;
+
+        if (fabs(D0) < FLT_EPSILON && fabs(D1) < FLT_EPSILON)
+            //this is the case, the segment is just on the plane
+            return false;
+
+        float beta01 = D1 / (D1 - D0);
+        Vec3  t0 = beta01 * r0 + (1 - beta01) * r1;
+
+        *t = 1 - beta01;
+
+        return is_point_in_triangle(Vec3(0, 0, 0), e0, e1, t0);
+    }
+
+    void detectIntersection3(Vec3 t0_p0, Vec3 t0_p1, Vec3 t0_p2,
+        Vec3 t1_p0, Vec3 t1_p1, Vec3 t1_p2)
+    {
+        int intersectPtIndex = 0;
+
+        //Vec3 array[6] = {
+        //                Vec3(0.055987, 1.353311, 0.101129),
+        //                Vec3(0.078218, 1.352396, 0.101684),
+        //                Vec3(0.073629, 1.361798, 0.077059),
+        //                Vec3(0.076033, 1.358053, 0.088566),
+        //                Vec3(0.074344, 1.354258, 0.091342),
+        //                Vec3(0.077621, 1.355455, 0.089985)
+        //};
+
+        //Vec3 t0_p0 = array[0];
+        //Vec3 t0_p1 = array[1];
+        //Vec3 t0_p2 = array[2];
+
+        //Vec3 t1_p0 = array[3];
+        //Vec3 t1_p1 = array[4];
+        //Vec3 t1_p2 = array[5];
+
+        float t;
+        if (intersectPtIndex < 2 && test_edge_triangle_intersection(t0_p0, t0_p1, t0_p2, t1_p0, t1_p1, &t))
+        {
+            printf("branch 1 \n");
+            intersectPtIndex++;
+        }
+        if (intersectPtIndex < 2 && test_edge_triangle_intersection(t0_p0, t0_p1, t0_p2, t1_p1, t1_p2, &t))
+        {
+            printf("branch 2 \n");
+            intersectPtIndex++;
+        }
+        if (intersectPtIndex < 2 && test_edge_triangle_intersection(t0_p0, t0_p1, t0_p2, t1_p2, t1_p0, &t))
+        {
+            printf("branch 3 \n");
+            intersectPtIndex++;
+        }
+        if (intersectPtIndex < 2 && test_edge_triangle_intersection(t1_p0, t1_p1, t1_p2, t0_p0, t0_p1, &t))
+        {
+            printf("branch 4 \n");
+            intersectPtIndex++;
+        }
+        if (intersectPtIndex < 2 && test_edge_triangle_intersection(t1_p0, t1_p1, t1_p2, t0_p1, t0_p2, &t))
+        {
+            printf("branch 5 \n");
+            intersectPtIndex++;
+        }
+        if (intersectPtIndex < 2 && test_edge_triangle_intersection(t1_p0, t1_p1, t1_p2, t0_p2, t0_p0, &t))
+        {
+            printf("branch 6 \n");
+            intersectPtIndex++;
+        }
+
+        if (intersectPtIndex != 2)
+        {
+            printf("Error test intersection. \n");
+        }
+    }
+
 
 }
 
+
+namespace REF {
+#define DIM 3
+
+    /* some 3D macros */
+
+#define CROSS(dest,v1,v2)                       \
+               dest[0]=v1[1]*v2[2]-v1[2]*v2[1]; \
+               dest[1]=v1[2]*v2[0]-v1[0]*v2[2]; \
+               dest[2]=v1[0]*v2[1]-v1[1]*v2[0];
+
+#define DOT(v1,v2) (v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2])
+
+
+
+#define SUB(dest,v1,v2) dest[0]=v1[0]-v2[0]; \
+                        dest[1]=v1[1]-v2[1]; \
+                        dest[2]=v1[2]-v2[2];
+
+
+
+#define SCALAR(dest,alpha,v) dest[0] = alpha * v[0]; \
+                             dest[1] = alpha * v[1]; \
+                             dest[2] = alpha * v[2];
+
+#define COPY(dest, src) memcpy(dest, src, sizeof(double) * DIM);
+
+#define CHECK_MIN_MAX(p1,q1,r1,p2,q2,r2) {\
+  SUB(v1,p2,q1)\
+  SUB(v2,p1,q1)\
+  CROSS(N1,v1,v2)\
+  SUB(v1,q2,q1)\
+  if (DOT(v1,N1) > 0.0f) return 0;\
+  SUB(v1,p2,p1)\
+  SUB(v2,r1,p1)\
+  CROSS(N1,v1,v2)\
+  SUB(v1,r2,p1) \
+  if (DOT(v1,N1) > 0.0f) return 0;\
+  else return 1; }
+
+
+
+/* Permutation in a canonical form of T2's vertices */
+
+#define TRI_TRI_3D(p1,q1,r1,p2,q2,r2,dp2,dq2,dr2) { \
+  if (dp2 > 0.0f) { \
+     if (dq2 > 0.0f) CHECK_MIN_MAX(p1,r1,q1,r2,p2,q2) \
+     else if (dr2 > 0.0f) CHECK_MIN_MAX(p1,r1,q1,q2,r2,p2)\
+     else CHECK_MIN_MAX(p1,q1,r1,p2,q2,r2) }\
+  else if (dp2 < 0.0f) { \
+    if (dq2 < 0.0f) CHECK_MIN_MAX(p1,q1,r1,r2,p2,q2)\
+    else if (dr2 < 0.0f) CHECK_MIN_MAX(p1,q1,r1,q2,r2,p2)\
+    else CHECK_MIN_MAX(p1,r1,q1,p2,q2,r2)\
+  } else { \
+    if (dq2 < 0.0f) { \
+      if (dr2 >= 0.0f)  CHECK_MIN_MAX(p1,r1,q1,q2,r2,p2)\
+      else CHECK_MIN_MAX(p1,q1,r1,p2,q2,r2)\
+    } \
+    else if (dq2 > 0.0f) { \
+      if (dr2 > 0.0f) CHECK_MIN_MAX(p1,r1,q1,p2,q2,r2)\
+      else  CHECK_MIN_MAX(p1,q1,r1,q2,r2,p2)\
+    } \
+    else  { \
+      if (dr2 > 0.0f) CHECK_MIN_MAX(p1,q1,r1,r2,p2,q2)\
+      else if (dr2 < 0.0f) CHECK_MIN_MAX(p1,r1,q1,r2,p2,q2)\
+      else return coplanar_tri_tri3d(p1,q1,r1,p2,q2,r2,N1,N2);\
+     }}}
+
+
+
+/*
+*
+*  Three-dimensional Triangle-Triangle Overlap Test
+*
+*/
+
+
+    int tri_tri_overlap_test_3d(double p1[3], double q1[3], double r1[3],
+
+        double p2[3], double q2[3], double r2[3])
+    {
+        double dp1, dq1, dr1, dp2, dq2, dr2;
+        double v1[3], v2[3];
+        double N1[3], N2[3];
+
+        /* Compute distance signs  of p1, q1 and r1 to the plane of
+        triangle(p2,q2,r2) */
+
+
+        SUB(v1, p2, r2)
+            SUB(v2, q2, r2)
+            CROSS(N2, v1, v2)
+
+            SUB(v1, p1, r2)
+            dp1 = DOT(v1, N2);
+        SUB(v1, q1, r2)
+            dq1 = DOT(v1, N2);
+        SUB(v1, r1, r2)
+            dr1 = DOT(v1, N2);
+
+        if (((dp1 * dq1) > 0.0f) && ((dp1 * dr1) > 0.0f))  return 0;
+
+        /* Compute distance signs  of p2, q2 and r2 to the plane of
+        triangle(p1,q1,r1) */
+
+
+        SUB(v1, q1, p1)
+            SUB(v2, r1, p1)
+            CROSS(N1, v1, v2)
+
+            SUB(v1, p2, r1)
+            dp2 = DOT(v1, N1);
+        SUB(v1, q2, r1)
+            dq2 = DOT(v1, N1);
+        SUB(v1, r2, r1)
+            dr2 = DOT(v1, N1);
+
+        if (((dp2 * dq2) > 0.0f) && ((dp2 * dr2) > 0.0f)) return 0;
+
+        /* Permutation in a canonical form of T1's vertices */
+
+
+        if (dp1 > 0.0f) {
+            if (dq1 > 0.0f) TRI_TRI_3D(r1, p1, q1, p2, r2, q2, dp2, dr2, dq2)
+            else if (dr1 > 0.0f) TRI_TRI_3D(q1, r1, p1, p2, r2, q2, dp2, dr2, dq2)
+            else TRI_TRI_3D(p1, q1, r1, p2, q2, r2, dp2, dq2, dr2)
+        }
+        else if (dp1 < 0.0f) {
+            if (dq1 < 0.0f) TRI_TRI_3D(r1, p1, q1, p2, q2, r2, dp2, dq2, dr2)
+            else if (dr1 < 0.0f) TRI_TRI_3D(q1, r1, p1, p2, q2, r2, dp2, dq2, dr2)
+            else TRI_TRI_3D(p1, q1, r1, p2, r2, q2, dp2, dr2, dq2)
+        }
+        else {
+            if (dq1 < 0.0f) {
+                if (dr1 >= 0.0f) TRI_TRI_3D(q1, r1, p1, p2, r2, q2, dp2, dr2, dq2)
+                else TRI_TRI_3D(p1, q1, r1, p2, q2, r2, dp2, dq2, dr2)
+            }
+            else if (dq1 > 0.0f) {
+                if (dr1 > 0.0f) TRI_TRI_3D(p1, q1, r1, p2, r2, q2, dp2, dr2, dq2)
+                else TRI_TRI_3D(q1, r1, p1, p2, q2, r2, dp2, dq2, dr2)
+            }
+            else {
+                if (dr1 > 0.0f) TRI_TRI_3D(r1, p1, q1, p2, q2, r2, dp2, dq2, dr2)
+                else if (dr1 < 0.0f) TRI_TRI_3D(r1, p1, q1, p2, r2, q2, dp2, dr2, dq2)
+                else return coplanar_tri_tri3d(p1, q1, r1, p2, q2, r2, N1, N2);
+            }
+        }
+    };
+
+
+
+    int coplanar_tri_tri3d(double p1[3], double q1[3], double r1[3],
+        double p2[3], double q2[3], double r2[3],
+        double normal_1[3], double normal_2[3]) {
+
+        double P1[2], Q1[2], R1[2];
+        double P2[2], Q2[2], R2[2];
+
+        double n_x, n_y, n_z;
+
+        n_x = ((normal_1[0] < 0) ? -normal_1[0] : normal_1[0]);
+        n_y = ((normal_1[1] < 0) ? -normal_1[1] : normal_1[1]);
+        n_z = ((normal_1[2] < 0) ? -normal_1[2] : normal_1[2]);
+
+
+        /* Projection of the triangles in 3D onto 2D such that the area of
+        the projection is maximized. */
+
+
+        if ((n_x > n_z) && (n_x >= n_y)) {
+            // Project onto plane YZ
+
+            P1[0] = q1[2]; P1[1] = q1[1];
+            Q1[0] = p1[2]; Q1[1] = p1[1];
+            R1[0] = r1[2]; R1[1] = r1[1];
+
+            P2[0] = q2[2]; P2[1] = q2[1];
+            Q2[0] = p2[2]; Q2[1] = p2[1];
+            R2[0] = r2[2]; R2[1] = r2[1];
+
+        }
+        else if ((n_y > n_z) && (n_y >= n_x)) {
+            // Project onto plane XZ
+
+            P1[0] = q1[0]; P1[1] = q1[2];
+            Q1[0] = p1[0]; Q1[1] = p1[2];
+            R1[0] = r1[0]; R1[1] = r1[2];
+
+            P2[0] = q2[0]; P2[1] = q2[2];
+            Q2[0] = p2[0]; Q2[1] = p2[2];
+            R2[0] = r2[0]; R2[1] = r2[2];
+
+        }
+        else {
+            // Project onto plane XY
+
+            P1[0] = p1[0]; P1[1] = p1[1];
+            Q1[0] = q1[0]; Q1[1] = q1[1];
+            R1[0] = r1[0]; R1[1] = r1[1];
+
+            P2[0] = p2[0]; P2[1] = p2[1];
+            Q2[0] = q2[0]; Q2[1] = q2[1];
+            R2[0] = r2[0]; R2[1] = r2[1];
+        }
+
+        return tri_tri_overlap_test_2d(P1, Q1, R1, P2, Q2, R2);
+
+    };
+
+
+
+    /*
+    *
+    *  Three-dimensional Triangle-Triangle Intersection
+    *
+    */
+
+    /*
+    This macro is called when the triangles surely intersect
+    It constructs the segment of intersection of the two triangles
+    if they are not coplanar.
+    */
+
+#define CONSTRUCT_INTERSECTION(p1,q1,r1,p2,q2,r2,i1,i2,i3,j1,j2,j3) { \
+  SUB(v1,q1,p1) \
+  SUB(v2,r2,p1) \
+  CROSS(N,v1,v2) \
+  SUB(v,p2,p1) \
+  if (DOT(v,N) > 0.0f) {\
+    SUB(v1,r1,p1) \
+    CROSS(N,v1,v2) \
+    if (DOT(v,N) <= 0.0f) { \
+      SUB(v2,q2,p1) \
+      CROSS(N,v1,v2) \
+      if (DOT(v,N) > 0.0f) { \
+  SUB(v1,p1,p2) \
+  SUB(v2,p1,r1) \
+  alpha = DOT(v1,N2) / DOT(v2,N2); \
+  SCALAR(v1,alpha,v2) \
+ /* src between p1 and r1 */\
+  SUB(source,p1,v1) \
+  src_s = i1;\
+  src_e = i3;\
+  srcOnT1 = true;\
+  SUB(v1,p2,p1) \
+  SUB(v2,p2,r2) \
+  alpha = DOT(v1,N1) / DOT(v2,N1); \
+  SCALAR(v1,alpha,v2) \
+/* tgt between p2 and r2 */\
+  SUB(target,p2,v1) \
+  tgt_s = j1;\
+  tgt_e = j3;\
+  tgtOnT1 = false;\
+  return 1; \
+      } else { \
+  SUB(v1,p2,p1) \
+  SUB(v2,p2,q2) \
+  alpha = DOT(v1,N1) / DOT(v2,N1); \
+  SCALAR(v1,alpha,v2) \
+/* src between p2 and q2 */\
+  SUB(source,p2,v1) \
+  src_s = j1;\
+  src_e = j2;\
+  srcOnT1 = false;\
+  SUB(v1,p2,p1) \
+  SUB(v2,p2,r2) \
+  alpha = DOT(v1,N1) / DOT(v2,N1); \
+  SCALAR(v1,alpha,v2) \
+/* tgt between p2 and r2 */\
+  SUB(target,p2,v1) \
+  tgt_s = j1;\
+  tgt_e = j3;\
+  tgtOnT1 = false;\
+  return 1; \
+      } \
+    } else { \
+      return 0; \
+    } \
+  } else { \
+    SUB(v2,q2,p1) \
+    CROSS(N,v1,v2) \
+    if (DOT(v,N) < 0.0f) { \
+      return 0; \
+    } else { \
+      SUB(v1,r1,p1) \
+      CROSS(N,v1,v2) \
+      if (DOT(v,N) >= 0.0f) { \
+  SUB(v1,p1,p2) \
+  SUB(v2,p1,r1) \
+  alpha = DOT(v1,N2) / DOT(v2,N2); \
+  SCALAR(v1,alpha,v2) \
+/* src between p1 and r1 */\
+  SUB(source,p1,v1) \
+  SUB(v1,p1,p2) \
+  SUB(v2,p1,q1) \
+  src_s = i1;\
+  src_e = i3;\
+  srcOnT1 = true;\
+  alpha = DOT(v1,N2) / DOT(v2,N2); \
+  SCALAR(v1,alpha,v2) \
+/* tgt between p1 and q1 */\
+  SUB(target,p1,v1) \
+  tgt_s = i1;\
+  tgt_e = i2;\
+  tgtOnT1 = true;\
+  return 1; \
+      } else { \
+  SUB(v1,p2,p1) \
+  SUB(v2,p2,q2) \
+  alpha = DOT(v1,N1) / DOT(v2,N1); \
+  SCALAR(v1,alpha,v2) \
+/* src between p2 and q2 */\
+  SUB(source,p2,v1) \
+  src_s = j1;\
+  src_e = j2;\
+  srcOnT1 = false;\
+  SUB(v1,p1,p2) \
+  SUB(v2,p1,q1) \
+  alpha = DOT(v1,N2) / DOT(v2,N2); \
+  SCALAR(v1,alpha,v2) \
+/* src between p1 and q1 */\
+  SUB(target,p1,v1) \
+  tgt_s = i1;\
+  tgt_e = i2;\
+  tgtOnT1 = true;\
+  return 1; \
+      }}}}
+
+
+
+#define TRI_TRI_INTER_3D(p1,q1,r1,p2,q2,r2,dp2,dq2,dr2,i1,i2,i3,j1,j2,j3) { \
+  if (dp2 > 0.0f) { \
+     if (dq2 > 0.0f) CONSTRUCT_INTERSECTION(p1,r1,q1,r2,p2,q2,i1,i3,i2,j3,j1,j2) \
+     else if (dr2 > 0.0f) CONSTRUCT_INTERSECTION(p1,r1,q1,q2,r2,p2,i1,i3,i2,j2,j3,j1)\
+     else CONSTRUCT_INTERSECTION(p1,q1,r1,p2,q2,r2,i1,i2,i3,j1,j2,j3) }\
+  else if (dp2 < 0.0f) { \
+    if (dq2 < 0.0f) CONSTRUCT_INTERSECTION(p1,q1,r1,r2,p2,q2,i1,i2,i3,j3,j1,j2)\
+    else if (dr2 < 0.0f) CONSTRUCT_INTERSECTION(p1,q1,r1,q2,r2,p2,i1,i2,i3,j2,j3,j1)\
+    else CONSTRUCT_INTERSECTION(p1,r1,q1,p2,q2,r2,i1,i3,i2,j1,j2,j3)\
+  } else { \
+    if (dq2 < 0.0f) { \
+      if (dr2 >= 0.0f)  CONSTRUCT_INTERSECTION(p1,r1,q1,q2,r2,p2,i1,i3,i2,j1,j3,j2)\
+      else CONSTRUCT_INTERSECTION(p1,q1,r1,p2,q2,r2,i1,i2,i3,j1,j2,j3)\
+    } \
+    else if (dq2 > 0.0f) { \
+      if (dr2 > 0.0f) CONSTRUCT_INTERSECTION(p1,r1,q1,p2,q2,r2,i1,i3,i2,j1,j2,j3)\
+      else  CONSTRUCT_INTERSECTION(p1,q1,r1,q2,r2,p2,i1,i2,i3,j2,j3,j1)\
+    } \
+    else  { \
+      if (dr2 > 0.0f) CONSTRUCT_INTERSECTION(p1,q1,r1,r2,p2,q2,i1,i2,i3,j3,j1,j2)\
+      else if (dr2 < 0.0f) CONSTRUCT_INTERSECTION(p1,r1,q1,r2,p2,q2,i1,i3,i2,j3,j1,j2)\
+      else { \
+        *coplanar = 1; \
+  return coplanar_tri_tri3d(p1,q1,r1,p2,q2,r2,N1,N2);\
+     } \
+  }} }
+
+
+    /*
+    The following version computes the segment of intersection of the
+    two triangles if it exists.
+    coplanar returns whether the triangles are coplanar
+    source and target are the endpoints of the line segment of intersection
+    */
+
+    int tri_tri_intersection_test_3d(double p1[3], double q1[3], double r1[3],
+        double p2[3], double q2[3], double r2[3],
+        int* coplanar,
+        double source[3], double target[3],
+        int i1, int i2, int i3,
+        int j1, int j2, int j3,
+        int& src_s, int& src_e,
+        int& tgt_s, int& tgt_e,
+        bool& srcOnT1, bool& tgtOnT1)
+    {
+        double dp1, dq1, dr1, dp2, dq2, dr2;
+        double v1[3], v2[3], v[3];
+        double N1[3], N2[3], N[3];
+        double alpha;
+
+        // Compute distance signs  of p1, q1 and r1
+        // to the plane of triangle(p2,q2,r2)
+
+        SUB(v1, p2, r2)
+            SUB(v2, q2, r2)
+            CROSS(N2, v1, v2)
+
+            SUB(v1, p1, r2)
+            dp1 = DOT(v1, N2);
+        SUB(v1, q1, r2)
+            dq1 = DOT(v1, N2);
+        SUB(v1, r1, r2)
+            dr1 = DOT(v1, N2);
+
+        if (((dp1 * dq1) > 0.0f) && ((dp1 * dr1) > 0.0f))  return 0;
+
+        // Compute distance signs  of p2, q2 and r2
+        // to the plane of triangle(p1,q1,r1)
+
+
+        SUB(v1, q1, p1)
+            SUB(v2, r1, p1)
+            CROSS(N1, v1, v2)
+
+            SUB(v1, p2, r1)
+            dp2 = DOT(v1, N1);
+        SUB(v1, q2, r1)
+            dq2 = DOT(v1, N1);
+        SUB(v1, r2, r1)
+            dr2 = DOT(v1, N1);
+
+        if (((dp2 * dq2) > 0.0f) && ((dp2 * dr2) > 0.0f)) return 0;
+
+        // Permutation in a canonical form of T1's vertices
+
+
+        if (dp1 > 0.0f) {
+            if (dq1 > 0.0f) TRI_TRI_INTER_3D(r1, p1, q1, p2, r2, q2, dp2, dr2, dq2, i3, i1, i2, j1, j3, j2)
+            else if (dr1 > 0.0f) TRI_TRI_INTER_3D(q1, r1, p1, p2, r2, q2, dp2, dr2, dq2, i2, i3, i1, j1, j3, j2)
+
+            else TRI_TRI_INTER_3D(p1, q1, r1, p2, q2, r2, dp2, dq2, dr2, i1, i2, i3, j1, j2, j3)
+        }
+        else if (dp1 < 0.0f) {
+            if (dq1 < 0.0f) TRI_TRI_INTER_3D(r1, p1, q1, p2, q2, r2, dp2, dq2, dr2, i3, i1, i2, j1, j2, j3)
+            else if (dr1 < 0.0f) TRI_TRI_INTER_3D(q1, r1, p1, p2, q2, r2, dp2, dq2, dr2, i2, i3, i1, j1, j2, j3)
+            else TRI_TRI_INTER_3D(p1, q1, r1, p2, r2, q2, dp2, dr2, dq2, i1, i2, i3, j1, j3, j2)
+        }
+        else {
+            if (dq1 < 0.0f) {
+                if (dr1 >= 0.0f) TRI_TRI_INTER_3D(q1, r1, p1, p2, r2, q2, dp2, dr2, dq2, i2, i3, i1, j1, j3, j2)
+                else TRI_TRI_INTER_3D(p1, q1, r1, p2, q2, r2, dp2, dq2, dr2, i1, i2, i3, j1, j2, j3)
+            }
+            else if (dq1 > 0.0f) {
+                if (dr1 > 0.0f) TRI_TRI_INTER_3D(p1, q1, r1, p2, r2, q2, dp2, dr2, dq2, i1, i2, i3, j1, j3, j2)
+                else TRI_TRI_INTER_3D(q1, r1, p1, p2, q2, r2, dp2, dq2, dr2, i2, i3, i1, j1, j2, j3)
+            }
+            else {
+                if (dr1 > 0.0f) TRI_TRI_INTER_3D(r1, p1, q1, p2, q2, r2, dp2, dq2, dr2, i3, i1, i2, j1, j2, j3)
+                else if (dr1 < 0.0f) TRI_TRI_INTER_3D(r1, p1, q1, p2, r2, q2, dp2, dr2, dq2, i3, i1, i2, j1, j3, j2)
+                else {
+                    // triangles are co-planar
+
+                    *coplanar = 1;
+                    return coplanar_tri_tri3d(p1, q1, r1, p2, q2, r2, N1, N2);
+                }
+            }
+        }
+    };
+
+
+
+
+
+    /*
+    *
+    *  Two dimensional Triangle-Triangle Overlap Test
+    *
+    */
+
+
+    /* some 2D macros */
+
+#define ORIENT_2D(a, b, c)  ((a[0]-c[0])*(b[1]-c[1])-(a[1]-c[1])*(b[0]-c[0]))
+
+
+#define INTERSECTION_TEST_VERTEX(P1, Q1, R1, P2, Q2, R2) {\
+  if (ORIENT_2D(R2,P2,Q1) >= 0.0f)\
+    if (ORIENT_2D(R2,Q2,Q1) <= 0.0f)\
+      if (ORIENT_2D(P1,P2,Q1) > 0.0f) {\
+  if (ORIENT_2D(P1,Q2,Q1) <= 0.0f) return 1; \
+  else return 0;} else {\
+  if (ORIENT_2D(P1,P2,R1) >= 0.0f)\
+    if (ORIENT_2D(Q1,R1,P2) >= 0.0f) return 1; \
+    else return 0;\
+  else return 0;}\
+    else \
+      if (ORIENT_2D(P1,Q2,Q1) <= 0.0f)\
+  if (ORIENT_2D(R2,Q2,R1) <= 0.0f)\
+    if (ORIENT_2D(Q1,R1,Q2) >= 0.0f) return 1; \
+    else return 0;\
+  else return 0;\
+      else return 0;\
+  else\
+    if (ORIENT_2D(R2,P2,R1) >= 0.0f) \
+      if (ORIENT_2D(Q1,R1,R2) >= 0.0f)\
+  if (ORIENT_2D(P1,P2,R1) >= 0.0f) return 1;\
+  else return 0;\
+      else \
+  if (ORIENT_2D(Q1,R1,Q2) >= 0.0f) {\
+    if (ORIENT_2D(R2,R1,Q2) >= 0.0f) return 1; \
+    else return 0; }\
+  else return 0; \
+    else  return 0; \
+ };
+
+
+
+#define INTERSECTION_TEST_EDGE(P1, Q1, R1, P2, Q2, R2) { \
+  if (ORIENT_2D(R2,P2,Q1) >= 0.0f) {\
+    if (ORIENT_2D(P1,P2,Q1) >= 0.0f) { \
+        if (ORIENT_2D(P1,Q1,R2) >= 0.0f) return 1; \
+        else return 0;} else { \
+      if (ORIENT_2D(Q1,R1,P2) >= 0.0f){ \
+  if (ORIENT_2D(R1,P1,P2) >= 0.0f) return 1; else return 0;} \
+      else return 0; } \
+  } else {\
+    if (ORIENT_2D(R2,P2,R1) >= 0.0f) {\
+      if (ORIENT_2D(P1,P2,R1) >= 0.0f) {\
+  if (ORIENT_2D(P1,R1,R2) >= 0.0f) return 1;  \
+  else {\
+    if (ORIENT_2D(Q1,R1,R2) >= 0.0f) return 1; else return 0;}}\
+      else  return 0; }\
+    else return 0; }}
+
+
+
+    int ccw_tri_tri_intersection_2d(double p1[2], double q1[2], double r1[2],
+        double p2[2], double q2[2], double r2[2]) {
+        if (ORIENT_2D(p2, q2, p1) >= 0.0f) {
+            if (ORIENT_2D(q2, r2, p1) >= 0.0f) {
+                if (ORIENT_2D(r2, p2, p1) >= 0.0f) return 1;
+                else INTERSECTION_TEST_EDGE(p1, q1, r1, p2, q2, r2)
+            }
+            else {
+                if (ORIENT_2D(r2, p2, p1) >= 0.0f)
+                    INTERSECTION_TEST_EDGE(p1, q1, r1, r2, p2, q2)
+                else INTERSECTION_TEST_VERTEX(p1, q1, r1, p2, q2, r2)
+            }
+        }
+        else {
+            if (ORIENT_2D(q2, r2, p1) >= 0.0f) {
+                if (ORIENT_2D(r2, p2, p1) >= 0.0f)
+                    INTERSECTION_TEST_EDGE(p1, q1, r1, q2, r2, p2)
+                else  INTERSECTION_TEST_VERTEX(p1, q1, r1, q2, r2, p2)
+            }
+            else INTERSECTION_TEST_VERTEX(p1, q1, r1, r2, p2, q2)
+        }
+    };
+
+
+    int tri_tri_overlap_test_2d(double p1[2], double q1[2], double r1[2],
+        double p2[2], double q2[2], double r2[2]) {
+        if (ORIENT_2D(p1, q1, r1) < 0.0f)
+            if (ORIENT_2D(p2, q2, r2) < 0.0f)
+                return ccw_tri_tri_intersection_2d(p1, r1, q1, p2, r2, q2);
+            else
+                return ccw_tri_tri_intersection_2d(p1, r1, q1, p2, q2, r2);
+        else
+            if (ORIENT_2D(p2, q2, r2) < 0.0f)
+                return ccw_tri_tri_intersection_2d(p1, q1, r1, p2, r2, q2);
+            else
+                return ccw_tri_tri_intersection_2d(p1, q1, r1, p2, q2, r2);
+
+    };
+
+    bool isTriangleIntersect(Vec3 t0_p0, Vec3 t0_p1, Vec3 t0_p2,
+        Vec3 t1_p0, Vec3 t1_p1, Vec3 t1_p2,
+        int i1 , int i2, int i3, int j1, int j2, int j3)
+    {
+        const float EPSILON = 1e-7f;
+
+        t0_p0 = t0_p0 * 1000.0f;
+        t0_p1 = t0_p1 * 1000.0f;
+        t0_p2 = t0_p2 * 1000.0f;
+
+        t1_p0 = t1_p0 * 1000.0f;
+        t1_p1 = t1_p1 * 1000.0f;
+        t1_p2 = t1_p2 * 1000.0f;
+
+
+        Vec3 N0 = cross(t0_p1 - t0_p0, t0_p2 - t0_p0);
+        float lenN0 = length(N0);
+        if (lenN0 < EPSILON)
+        {
+            return false;
+        }
+        N0 = N0 / lenN0;
+
+        Vec3 N1 = cross(t1_p1 - t1_p0, t1_p2 - t1_p0);
+        float lenN1 = length(N1);
+        if (lenN1 < EPSILON)
+        {
+            return false;
+        }
+        N1 = N1 / lenN1;
+
+        float angle_for_n0_n1 = dot(N1, N0);
+        //test if N1 are N0 are on the same line
+        if ((angle_for_n0_n1 > 0 ? angle_for_n0_n1 : -angle_for_n0_n1) >= 1 - EPSILON)
+            return false;
+
+        //test intersection of triangles
+        int coplanar = 0;
+        double p0[3] = { t0_p0.x, t0_p0.y, t0_p0.z };
+        double p1[3] = { t0_p1.x, t0_p1.y, t0_p1.z };
+        double p2[3] = { t0_p2.x, t0_p2.y, t0_p2.z };
+        double q0[3] = { t1_p0.x, t1_p0.y, t1_p0.z };
+        double q1[3] = { t1_p1.x, t1_p1.y, t1_p1.z };
+        double q2[3] = { t1_p2.x, t1_p2.y, t1_p2.z };
+        int source_v0;
+        int source_v1;
+
+        int target_v0;
+        int target_v1;
+
+        bool srcOnT0 = false;
+        bool tgtOnT0 = false;
+        double source[3];
+        double target[3];
+
+        bool intersected = tri_tri_intersection_test_3d(p0, p1, p2, q0, q1, q2, &coplanar, source, target,
+            i1,i2,i3,j1,j2,j3,
+            source_v0, source_v1, target_v0, target_v1, srcOnT0, tgtOnT0);
+
+        if ( fabs(source[0] - target[0]) < FLT_EPSILON
+            && fabs(source[1] - target[1]) < FLT_EPSILON
+            && fabs(source[2] - target[2]) < FLT_EPSILON)
+        {
+            return false;
+        }
+
+        if (intersected && !coplanar)
+        {
+            //printf("untangle tri-hit \n");
+
+            return true;
+        }
+
+
+        return false;
+    }
+
+
+    //--------------------------------------------------------------------------------------------------------------------
+}

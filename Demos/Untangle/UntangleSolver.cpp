@@ -15,7 +15,7 @@ void generateMayaScriptForTriangle( Vec3 v0, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4,
 
 	printf("polyCreateFacet -ch on -tx 1 -s 1 -p %f %f %f -p %f %f %f -p %f %f %f;\n",
 		v3.x, v3.y, v3.z, v4.x, v4.y, v4.z, v5.x, v5.y, v5.z
-	);	
+	);
 }
 
 void generateTestCodeFOrTriangle(Vec3 v0, Vec3 v1, Vec3 v2, Vec3 v3, Vec3 v4, Vec3 v5)
@@ -51,6 +51,37 @@ UntangleSolver& UntangleSolver::singleton()
 void UntangleSolver::init( std::vector<Particle>&& particles,
                            std::vector<Triangle>&& triangles)
 {
+
+    bool ret = GeometryMath::isTriangleIntersect(
+        particles[0].mCurPosition,
+        particles[1].mCurPosition,
+        particles[2].mCurPosition,
+        particles[3].mCurPosition,
+        particles[4].mCurPosition,
+        particles[5].mCurPosition
+    );
+    std::cout << ret << std::endl;
+
+    bool ret2 = REF::isTriangleIntersect(
+        particles[0].mCurPosition,
+        particles[1].mCurPosition,
+        particles[2].mCurPosition,
+        particles[3].mCurPosition,
+        particles[4].mCurPosition,
+        particles[5].mCurPosition,
+            2, 1, 0,
+            7458, 7459, 7460
+        );
+
+    GeometryMath::detectIntersection3(
+        particles[0].mCurPosition,
+        particles[1].mCurPosition,
+        particles[2].mCurPosition,
+        particles[3].mCurPosition,
+        particles[4].mCurPosition,
+        particles[5].mCurPosition
+        );
+
     m_particles.swap( particles );
     m_triangles.swap( triangles );
 	m_shareEdgeMap.clear();

@@ -1,7 +1,7 @@
 @echo off
 
 if  %1==cmake (
-cmake %~dp0 -B %~dp0cmake-build
+cmake %~dp0 -B %~dp0cmake-build -A Visual Studio 15 2017 [Win64]
 goto :EOF
 )
 

@@ -151,6 +151,10 @@ void ShaderMgr::init() {
             Global::SystemResPath("/shader/triangle/triangle.fs"),
            Global::SystemResPath("/shader/triangle/triangle.gs"));
 
+    registerShader("triangle_simple_color",
+        Global::SystemResPath("/shader/triangle2/triangle.vs"),
+        Global::SystemResPath("/shader/triangle2/triangle.fs"));
+
     registerShader("tri_vn_pc",
                    Global::SystemResPath("/shader/tri_vn_pc/tri_vn_pc.vs"),
                    Global::SystemResPath("/shader/tri_vn_pc/tri_vn_pc.fs"));
